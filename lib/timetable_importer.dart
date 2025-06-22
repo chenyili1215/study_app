@@ -105,7 +105,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              color: colorScheme.surfaceVariant,
+              color: colorScheme.surfaceContainerHighest,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -153,7 +153,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                                 child: Material(
                                   elevation: 1,
                                   borderRadius: BorderRadius.circular(12),
-                                  color: colorScheme.background,
+                                  color: colorScheme.surface,
                                   child: isEditing
                                       ? Center(
                                           child: TextFormField(
@@ -250,7 +250,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              color: colorScheme.surfaceVariant,
+              color: colorScheme.surfaceContainerHighest,
               child: SizedBox(
                 height: 320,
                 child: ListView.builder(

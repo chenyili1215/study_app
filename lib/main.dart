@@ -155,7 +155,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

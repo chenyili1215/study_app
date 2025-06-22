@@ -324,7 +324,7 @@ class _LabelEngineState extends State<LabelEngine> {
             child: Material(
               elevation: 2,
               borderRadius: BorderRadius.circular(24),
-              color: colorScheme.surfaceVariant,
+              color: colorScheme.surfaceContainerHighest,
               child: TextField(
                 decoration: InputDecoration(
                   hintText: '搜尋課程',
@@ -358,7 +358,7 @@ class _LabelEngineState extends State<LabelEngine> {
                       elevation: 3,
                       margin: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      color: colorScheme.surfaceVariant,
+                      color: colorScheme.surfaceContainerHighest,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
