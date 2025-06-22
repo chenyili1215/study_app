@@ -468,8 +468,8 @@ class _LabelEngineState extends State<LabelEngine> {
             heroTag: 'attach',
             onPressed: pickFileAndChooseSubject,
             backgroundColor: colorScheme.secondary,
-            child: const Icon(Icons.attach_file, color: Colors.white),
             tooltip: '從檔案加入',
+            child: const Icon(Icons.attach_file, color: Colors.white),
           ),
           const SizedBox(height: 16),
           FloatingActionButton(
