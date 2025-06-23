@@ -209,7 +209,9 @@ class _TimetableImporterState extends State<TimetableImporter> {
                                 ),
                                 onPressed: () async {
                                   await timetable.save();
-                                  setState(() {});
+                                  setState(() {
+                                    _isEditing = false; // 儲存後自動退出編輯模式
+                                  });
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('課表已儲存')),
                                   );

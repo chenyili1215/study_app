@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart'; // 請加這行
 import 'package:share_plus/share_plus.dart'; // 新增
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:image/image.dart' as img;
 
 import 'timetable_importer.dart';
 
@@ -86,10 +89,33 @@ class _LabelEngineState extends State<LabelEngine> {
     await prefs.setStringList('photos', list);
   }
 
+  Future<String> saveAndCompressImage(String originPath) async {
+    // 讀取原始圖片
+    final bytes = await File(originPath).readAsBytes();
+    img.Image? image = img.decodeImage(bytes);
+    if (image == null) throw Exception('無法解碼圖片');
+
+    // 壓縮品質遞減直到小於2MB
+    int quality = 95;
+    List<int> jpg;
+    do {
+      jpg = img.encodeJpg(image, quality: quality);
+      quality -= 10;
+    } while (jpg.length > 2 * 1024 * 1024 && quality > 10);
+
+    // 存到 app 文件資料夾
+    final dir = await getApplicationDocumentsDirectory();
+    final fileName = 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final savePath = p.join(dir.path, fileName);
+    await File(savePath).writeAsBytes(jpg);
+    return savePath;
+  }
+
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
+      final savePath = await saveAndCompressImage(pickedFile.path);
       int period = getCurrentPeriod();
       DateTime now = DateTime.now();
       int weekday = now.weekday; // 1=Monday, 7=Sunday
@@ -100,10 +126,10 @@ class _LabelEngineState extends State<LabelEngine> {
       if (subject.isEmpty) subject = '下課/未排課';
       setState(() {
         _photos.add(PhotoNote(
-          imagePath: pickedFile.path,
+          imagePath: savePath,
           period: period,
           subject: subject,
-          dateTime: now, // 新增
+          dateTime: now,
         ));
       });
       await _savePhotos();
@@ -231,6 +257,7 @@ class _LabelEngineState extends State<LabelEngine> {
   Future<void> pickFileAndChooseSubject() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null && result.files.single.path != null) {
+      final savePath = await saveAndCompressImage(result.files.single.path!);
       // 取得所有課表科目（去除重複與空白）
       final subjects = TimetableData().table.expand((e) => e).toSet().where((s) => s.isNotEmpty).toList();
       String? selectedSubject = subjects.isNotEmpty ? subjects.first : '';
@@ -266,7 +293,7 @@ class _LabelEngineState extends State<LabelEngine> {
                   if (tempSubject != null && tempSubject!.isNotEmpty) {
                     setState(() {
                       _photos.add(PhotoNote(
-                        imagePath: result.files.single.path!,
+                        imagePath: savePath,
                         period: 0,
                         subject: tempSubject!,
                         dateTime: DateTime.now(),
