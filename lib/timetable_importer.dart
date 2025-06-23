@@ -84,7 +84,8 @@ class _TimetableImporterState extends State<TimetableImporter> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('課表'),
+        title: const Text('課表', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        
         actions: [
           IconButton(
             icon: Icon(isEditing ? Icons.close : Icons.edit),

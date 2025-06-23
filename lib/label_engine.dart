@@ -451,7 +451,7 @@ class _LabelEngineState extends State<LabelEngine> {
       appBar: _isSelecting
           ? AppBar(
               title: Text('已選擇 ${_selectedIndexes.length} 張'),
-              backgroundColor: colorScheme.primaryContainer,
+              backgroundColor: Colors.transparent, // 讓標題列透明
               actions: [
                 IconButton(
                   icon: const Icon(Icons.share),
@@ -472,8 +472,11 @@ class _LabelEngineState extends State<LabelEngine> {
               ],
             )
           : AppBar(
-              title: const Text('照片筆記'),
-              backgroundColor: colorScheme.primaryContainer,
+              title: const Text(
+                '照片筆記',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: Colors.transparent, // 讓標題列透明
             ),
       body: Column(
         children: [

@@ -156,33 +156,19 @@ class _HomePageState extends State<HomePage> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 新增首頁標題
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "首頁",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.primary,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Card(
                 elevation: 8,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
                 color: colorScheme.primaryContainer,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         "歡迎",
@@ -242,9 +228,23 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          // 標題移到左上角
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AppBar(
+              title: const Text(
+                '首頁',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              ),
+              backgroundColor: Colors.transparent, // 讓標題列透明
+              elevation: 0,
+            ),
+          ),
+        ],
       ),
     );
   }
