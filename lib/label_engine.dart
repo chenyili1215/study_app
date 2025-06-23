@@ -184,6 +184,8 @@ class _LabelEngineState extends State<LabelEngine> {
 
   // 進入單一科目所有相片頁
   void _openSubjectPhotos(String subject, List<PhotoNote> photos) {
+    List<int> selectedIndexes = [];
+    bool isSelecting = false;
     DateTime? selectedDate;
     List<PhotoNote> filteredPhotos = photos;
 
@@ -219,28 +221,62 @@ class _LabelEngineState extends State<LabelEngine> {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => StatefulBuilder(
         builder: (context, setState) => Scaffold(
-          appBar: AppBar(
-            title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.calendar_today),
-                tooltip: '選擇日期',
-                onPressed: () => showCalendar(context, setState),
-              ),
-              if (selectedDate != null)
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  tooltip: '清除日期篩選',
-                  onPressed: () {
-                    setState(() {
-                      selectedDate = null;
-                      filteredPhotos = photos;
-                    });
-                  },
+          appBar: isSelecting
+              ? AppBar(
+                  title: Text('已選擇 ${selectedIndexes.length} 張'),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.share),
+                      tooltip: '分享',
+                      onPressed: () async {
+                        final files = selectedIndexes
+                            .map((i) => XFile(filteredPhotos[i].imagePath))
+                            .toList();
+                        if (files.isNotEmpty) {
+                          await Share.shareXFiles(files, text: '分享我的課堂照片');
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () async {
+                        setState(() {
+                          selectedIndexes
+                            ..sort((a, b) => b.compareTo(a))
+                            ..forEach((i) => filteredPhotos.removeAt(i));
+                          selectedIndexes.clear();
+                          isSelecting = false;
+                        });
+                        // 這裡同步刪除主資料
+                        _photos.removeWhere((p) => photos.contains(p) && !filteredPhotos.contains(p));
+                        await _savePhotos();
+                      },
+                    ),
+                  ],
+                )
+              : AppBar(
+                  title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      tooltip: '選擇日期',
+                      onPressed: () => showCalendar(context, setState),
+                    ),
+                    if (selectedDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        tooltip: '清除日期篩選',
+                        onPressed: () {
+                          setState(() {
+                            selectedDate = null;
+                            filteredPhotos = photos;
+                          });
+                        },
+                      ),
+                  ],
                 ),
-            ],
-          ),
           body: filteredPhotos.isEmpty
               ? Center(
                   child: Text(
@@ -257,18 +293,52 @@ class _LabelEngineState extends State<LabelEngine> {
                     crossAxisCount: 3,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
+                    childAspectRatio: 1, // 這行讓每格是正方形
                   ),
                   itemCount: filteredPhotos.length,
                   itemBuilder: (context, index) {
                     final note = filteredPhotos[index];
+                    final selected = selectedIndexes.contains(index);
                     return GestureDetector(
-                      onTap: () => openGallery(index, filteredPhotos),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.file(
-                          File(note.imagePath),
-                          fit: BoxFit.cover,
-                        ),
+                      onLongPress: () {
+                        setState(() {
+                          isSelecting = true;
+                          selectedIndexes.add(index);
+                        });
+                      },
+                      onTap: () {
+                        if (isSelecting) {
+                          setState(() {
+                            if (selected) {
+                              selectedIndexes.remove(index);
+                              if (selectedIndexes.isEmpty) isSelecting = false;
+                            } else {
+                              selectedIndexes.add(index);
+                            }
+                          });
+                        } else {
+                          openGallery(index, filteredPhotos);
+                        }
+                      },
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: AspectRatio(
+                              aspectRatio: 1, // 保持正方形
+                              child: Image.file(
+                                File(note.imagePath),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          if (selected)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 28),
+                            ),
+                        ],
                       ),
                     );
                   },
@@ -474,70 +544,76 @@ class _LabelEngineState extends State<LabelEngine> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Wrap(
-                              alignment: WrapAlignment.start,
-                              crossAxisAlignment: WrapCrossAlignment.start,
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: List.generate(
-                                photos.length > 3 ? 3 : photos.length,
-                                (index) {
+                            Row(
+                              children: List.generate(3, (index) {
+                                if (index < photos.length) {
                                   final note = photos[index];
                                   final globalIndex = _photos.indexOf(note);
                                   final selected = _selectedIndexes.contains(globalIndex);
-                                  return GestureDetector(
-                                    onLongPress: () => _onPhotoLongPress(globalIndex),
-                                    onTap: () => _onPhotoTap(globalIndex),
-                                    child: Stack(
-                                      children: [
-                                        Material(
-                                          elevation: selected ? 8 : 2,
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(16),
-                                            child: Image.file(
-                                              File(note.imagePath),
-                                              width: 110,
-                                              height: 110,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                        ),
-                                        if (selected)
-                                          Positioned(
-                                            top: 6,
-                                            right: 6,
-                                            child: Icon(Icons.check_circle, color: colorScheme.primary, size: 28),
-                                          ),
-                                        Positioned(
-                                          bottom: 0,
-                                          left: 0,
-                                          right: 0,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: colorScheme.secondaryContainer.withOpacity(0.85),
-                                              borderRadius: const BorderRadius.only(
-                                                bottomLeft: Radius.circular(16),
-                                                bottomRight: Radius.circular(16),
+                                  return Expanded(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(right: index != 2 ? 12 : 0),
+                                      child: GestureDetector(
+                                        onLongPress: () => _onPhotoLongPress(globalIndex),
+                                        onTap: () => _onPhotoTap(globalIndex),
+                                        child: Stack(
+                                          children: [
+                                            Material(
+                                              elevation: selected ? 8 : 2,
+                                              borderRadius: BorderRadius.circular(16),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(16),
+                                                child: AspectRatio(
+                                                  aspectRatio: 1,
+                                                  child: Image.file(
+                                                    File(note.imagePath),
+                                                    fit: BoxFit.cover,
+                                                    width: double.infinity,
+                                                    height: double.infinity,
+                                                  ),
+                                                ),
                                               ),
                                             ),
-                                            padding: const EdgeInsets.symmetric(vertical: 4),
-                                            child: Text(
-                                              // 顯示日期
-                                              '${note.dateTime.year}-${note.dateTime.month.toString().padLeft(2, '0')}-${note.dateTime.day.toString().padLeft(2, '0')}',
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                color: colorScheme.onSecondaryContainer,
+                                            if (selected)
+                                              Positioned(
+                                                top: 6,
+                                                right: 6,
+                                                child: Icon(Icons.check_circle, color: colorScheme.primary, size: 28),
                                               ),
-                                              textAlign: TextAlign.center,
+                                            Positioned(
+                                              bottom: 0,
+                                              left: 0,
+                                              right: 0,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme.secondaryContainer.withOpacity(0.85),
+                                                  borderRadius: const BorderRadius.only(
+                                                    bottomLeft: Radius.circular(16),
+                                                    bottomRight: Radius.circular(16),
+                                                  ),
+                                                ),
+                                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                                child: Text(
+                                                  // 顯示日期
+                                                  '${note.dateTime.year}-${note.dateTime.month.toString().padLeft(2, '0')}-${note.dateTime.day.toString().padLeft(2, '0')}',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    color: colorScheme.onSecondaryContainer,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   );
-                                },
-                              ),
+                                } else {
+                                  // 空白佔位，保持三等分
+                                  return const Expanded(child: SizedBox());
+                                }
+                              }),
                             ),
                           ],
                         ),
