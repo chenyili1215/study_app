@@ -184,33 +184,95 @@ class _LabelEngineState extends State<LabelEngine> {
 
   // 進入單一科目所有相片頁
   void _openSubjectPhotos(String subject, List<PhotoNote> photos) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: AppBar(
-          title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        ),
-        body: GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
+    DateTime? selectedDate;
+    List<PhotoNote> filteredPhotos = photos;
+
+    void showCalendar(BuildContext context, StateSetter setState) async {
+      final now = DateTime.now();
+      final firstDate = photos.map((e) => e.dateTime).reduce((a, b) => a.isBefore(b) ? a : b);
+      final lastDate = photos.map((e) => e.dateTime).reduce((a, b) => a.isAfter(b) ? a : b);
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate ?? now,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        builder: (context, child) => Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme,
+            dialogBackgroundColor: Theme.of(context).colorScheme.surface,
           ),
-          itemCount: photos.length,
-          itemBuilder: (context, index) {
-            final note = photos[index];
-            return GestureDetector(
-              onTap: () => openGallery(index, photos),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.file(
-                  File(note.imagePath),
-                  fit: BoxFit.cover,
-                ),
+          child: child!,
+        ),
+      );
+      if (picked != null) {
+        setState(() {
+          selectedDate = picked;
+          filteredPhotos = photos.where((e) =>
+            e.dateTime.year == picked.year &&
+            e.dateTime.month == picked.month &&
+            e.dateTime.day == picked.day
+          ).toList();
+        });
+      }
+    }
+
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) => Scaffold(
+          appBar: AppBar(
+            title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.calendar_today),
+                tooltip: '選擇日期',
+                onPressed: () => showCalendar(context, setState),
               ),
-            );
-          },
+              if (selectedDate != null)
+                IconButton(
+                  icon: const Icon(Icons.clear),
+                  tooltip: '清除日期篩選',
+                  onPressed: () {
+                    setState(() {
+                      selectedDate = null;
+                      filteredPhotos = photos;
+                    });
+                  },
+                ),
+            ],
+          ),
+          body: filteredPhotos.isEmpty
+              ? Center(
+                  child: Text(
+                    selectedDate == null ? '沒有照片' : '這天沒有照片',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                  ),
+                  itemCount: filteredPhotos.length,
+                  itemBuilder: (context, index) {
+                    final note = filteredPhotos[index];
+                    return GestureDetector(
+                      onTap: () => openGallery(index, filteredPhotos),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.file(
+                          File(note.imagePath),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ),
       ),
     ));
