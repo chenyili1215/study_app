@@ -200,8 +200,7 @@ class _LabelEngineState extends State<LabelEngine> {
         lastDate: lastDate,
         builder: (context, child) => Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme,
-            dialogBackgroundColor: Theme.of(context).colorScheme.surface,
+            colorScheme: Theme.of(context).colorScheme, dialogTheme: DialogThemeData(backgroundColor: Theme.of(context).colorScheme.surface),
           ),
           child: child!,
         ),
