@@ -66,11 +66,11 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = <Widget>[
-    HomePage(),
-    TimetableImporter(),
-    LabelEngine(),
-  ];
+  static List<Widget> _pagesWithCallback(void Function(int) onNav) => [
+        HomePage(onQuickNav: onNav),
+        TimetableImporter(),
+        LabelEngine(),
+      ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -81,7 +81,7 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _pages[_selectedIndex]),
+      body: SafeArea(child: _pagesWithCallback(_onItemTapped)[_selectedIndex]),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -105,7 +105,8 @@ class _MainPageState extends State<MainPage> {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final void Function(int)? onQuickNav;
+  const HomePage({super.key, this.onQuickNav});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -281,8 +282,7 @@ class _HomePageState extends State<HomePage> {
                           icon: const Icon(Icons.table_chart),
                           label: const Text("課表"),
                           onPressed: () {
-                            // 跳轉到課表
-                            DefaultTabController.of(context)?.animateTo(1);
+                            widget.onQuickNav?.call(1); // 課表
                           },
                         ),
                       ),
@@ -300,8 +300,7 @@ class _HomePageState extends State<HomePage> {
                           icon: const Icon(Icons.label),
                           label: const Text("照片筆記"),
                           onPressed: () {
-                            // 跳轉到照片筆記
-                            DefaultTabController.of(context)?.animateTo(2);
+                            widget.onQuickNav?.call(2); // 照片筆記
                           },
                         ),
                       ),
