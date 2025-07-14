@@ -119,7 +119,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     TimetableData().load().then((_) {
-      setState(() {}); // 課表載入後刷新畫面
+      setState(() {});
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
@@ -134,10 +134,9 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // 取得目前課程
   String getCurrentClass() {
     int period = getCurrentPeriod();
-    int weekday = _now.weekday; // 1=Monday, 7=Sunday
+    int weekday = _now.weekday;
     if (weekday < 1 || weekday > 5) {
       return "今天不是上課日";
     }
@@ -148,7 +147,7 @@ class _HomePageState extends State<HomePage> {
     if (subject.isEmpty) {
       return "未排課(第$period節)";
     }
-    return "$subject(第$period節)";
+    return "$subject (第$period節)";
   }
 
   @override
@@ -156,92 +155,160 @@ class _HomePageState extends State<HomePage> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Center(
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-                color: colorScheme.primaryContainer,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "歡迎",
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "${_now.hour.toString().padLeft(2, '0')}:${_now.minute.toString().padLeft(2, '0')}:${_now.second.toString().padLeft(2, '0')}",
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimaryContainer,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "${_now.year}-${_now.month.toString().padLeft(2, '0')}-${_now.day.toString().padLeft(2, '0')}",
-                        style: TextStyle(
-                          fontSize: 28,
-                          color: colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        "目前課程",
-                        style: TextStyle(
-                          fontSize: 24,
-                          color: colorScheme.secondary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                        decoration: BoxDecoration(
-                          color: colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          getCurrentClass(),
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: colorScheme.onSecondaryContainer,
-                            fontWeight: FontWeight.w600,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            backgroundColor: colorScheme.surface,
+            elevation: 0,
+            title: Row(
+              children: [
+                Icon(Icons.school, color: colorScheme.primary, size: 32),
+                const SizedBox(width: 8),
+                Text(
+                  '歡迎回來！',
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    color: colorScheme.primaryContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${_now.hour.toString().padLeft(2, '0')}:${_now.minute.toString().padLeft(2, '0')}:${_now.second.toString().padLeft(2, '0')}",
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onPrimaryContainer,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "${_now.year}-${_now.month.toString().padLeft(2, '0')}-${_now.day.toString().padLeft(2, '0')}",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
+                          Icon(
+                            Icons.access_time_filled_rounded,
+                            color: colorScheme.primary,
+                            size: 48,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    "目前課程",
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: colorScheme.secondary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    color: colorScheme.secondaryContainer,
+                    child: ListTile(
+                      leading: Icon(Icons.class_, color: colorScheme.secondary, size: 32),
+                      title: Text(
+                        getCurrentClass(),
+                        style: TextStyle(
+                          fontSize: 22,
+                          color: colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // 可擴充更多功能入口
+                  Text(
+                    "快速功能",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          icon: const Icon(Icons.table_chart),
+                          label: const Text("課表"),
+                          onPressed: () {
+                            // 跳轉到課表
+                            DefaultTabController.of(context)?.animateTo(1);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.secondary,
+                            foregroundColor: colorScheme.onSecondary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          icon: const Icon(Icons.label),
+                          label: const Text("照片筆記"),
+                          onPressed: () {
+                            // 跳轉到照片筆記
+                            DefaultTabController.of(context)?.animateTo(2);
+                          },
                         ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
-            ),
-          ),
-          // 標題移到左上角
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: AppBar(
-              title: const Text(
-                '首頁',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-              ),
-              backgroundColor: Colors.transparent, // 讓標題列透明
-              elevation: 0,
             ),
           ),
         ],
