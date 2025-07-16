@@ -241,7 +241,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
             ),
             const SizedBox(height: 24),
             Text(
-              '當日課表',
+              '當前課程資訊',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -250,30 +250,118 @@ class _TimetableImporterState extends State<TimetableImporter> {
               ),
             ),
             const SizedBox(height: 8),
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              color: colorScheme.surfaceContainerHighest,
-              child: SizedBox(
-                height: 320,
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: 7,
-                  itemBuilder: (context, period) {
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: colorScheme.primaryContainer,
-                        child: Text('${period + 1}', style: TextStyle(color: colorScheme.onPrimaryContainer)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 當節課程
+                Expanded(
+                  child: Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    color: colorScheme.surfaceContainerHighest,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      child: Builder(
+                        builder: (context) {
+                          final now = TimeOfDay.now();
+                          final minutes = now.hour * 60 + now.minute;
+                          final periods = [
+                            8 * 60 + 10,
+                            9 * 60 + 10,
+                            10 * 60 + 10,
+                            11 * 60 + 10,
+                            13 * 60,
+                            14 * 60,
+                            15 * 60 + 10,
+                          ];
+                          int currentPeriod = periods.lastIndexWhere((start) => minutes >= start) + 1;
+                          int todayIdx = (today - 1).clamp(0, 4);
+
+                          String getSubject(int period) {
+                            if (period < 1 || period > 7) return '無';
+                            final subject = timetable.table[todayIdx][period - 1];
+                            return subject.isEmpty ? '未排課' : subject;
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '當節課程',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                getSubject(currentPeriod),
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                      title: Text(
-                        timetable.table[(today - 1).clamp(0, 4)][period],
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                      subtitle: Text('第${period + 1}節'),
-                    );
-                  },
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                // 下節課程
+                Expanded(
+                  child: Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    color: colorScheme.surfaceContainerHighest,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      child: Builder(
+                        builder: (context) {
+                          final now = TimeOfDay.now();
+                          final minutes = now.hour * 60 + now.minute;
+                          final periods = [
+                            8 * 60 + 10,
+                            9 * 60 + 10,
+                            10 * 60 + 10,
+                            11 * 60 + 10,
+                            13 * 60,
+                            14 * 60,
+                            15 * 60 + 10,
+                          ];
+                          int currentPeriod = periods.lastIndexWhere((start) => minutes >= start) + 1;
+                          int nextPeriod = currentPeriod < 7 ? currentPeriod + 1 : 0;
+                          int todayIdx = (today - 1).clamp(0, 4);
+
+                          String getSubject(int period) {
+                            if (period < 1 || period > 7) return '無';
+                            final subject = timetable.table[todayIdx][period - 1];
+                            return subject.isEmpty ? '未排課' : subject;
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '下節課程',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                getSubject(nextPeriod),
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
