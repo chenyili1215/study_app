@@ -4,6 +4,7 @@ import 'label_engine.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'settings_page.dart';
 
 // 引入課表資料
 class TimetableData {
@@ -26,12 +27,18 @@ class TimetableData {
   }
 }
 
+ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.system);
+
 void main() {
-  runApp(const MyApp());
+  runApp(ValueListenableBuilder<ThemeMode>(
+    valueListenable: themeModeNotifier,
+    builder: (context, mode, _) => MyApp(themeMode: mode),
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeMode themeMode;
+  const MyApp({super.key, required this.themeMode});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +57,7 @@ class MyApp extends StatelessWidget {
         ),
         brightness: Brightness.dark,
       ),
-      themeMode: ThemeMode.system, // 跟隨系統
+      themeMode: themeMode,
       home: const MainPage(),
     );
   }
@@ -70,6 +77,7 @@ class _MainPageState extends State<MainPage> {
         HomePage(onQuickNav: onNav),
         TimetableImporter(),
         LabelEngine(),
+        const SettingsPage(), // 新增設定頁
       ];
 
   void _onItemTapped(int index) {
@@ -85,6 +93,7 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed, // 4個以上要加這行
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -97,6 +106,10 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.label),
             label: '照片筆記',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: '設定',
           ),
         ],
       ),
