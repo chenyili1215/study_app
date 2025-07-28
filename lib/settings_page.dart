@@ -10,6 +10,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   ThemeMode get _themeMode => themeModeNotifier.value;
+  int _aboutTapCount = 0;
 
   void _chooseTheme() async {
     final mode = await showModalBottomSheet<ThemeMode>(
@@ -52,6 +53,22 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  void _showEasterEgg() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('🎉 小彩蛋！', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('你發現了隱藏彩蛋！\n\n真是個聰明的學習者 😄'),
+        actions: [
+          TextButton(
+            child: const Text('關閉'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -74,7 +91,13 @@ class _SettingsPageState extends State<SettingsPage> {
             leading: const Icon(Icons.info_outline),
             title: const Text('關於'),
             subtitle: const Text('Study App v1.0.11'),
-            onTap: () {},
+            onTap: () {
+              _aboutTapCount++;
+              if (_aboutTapCount >= 5) {
+                _aboutTapCount = 0;
+                _showEasterEgg();
+              }
+            },
           ),
         ],
       ),
