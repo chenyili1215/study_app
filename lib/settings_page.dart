@@ -194,7 +194,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('關於'),
-            subtitle: const Text('Study App v1.0.12ㄕㄛ'),
+            subtitle: const Text('Study App v1.0.12'),
             onTap: () {
               _aboutTapCount++;
               if (_aboutTapCount >= 5) {
