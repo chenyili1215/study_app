@@ -28,17 +28,26 @@ class TimetableData {
 }
 
 ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.system);
+ValueNotifier<Color> seedColorNotifier = ValueNotifier(Colors.blue);
 
 void main() {
-  runApp(ValueListenableBuilder<ThemeMode>(
-    valueListenable: themeModeNotifier,
-    builder: (context, mode, _) => MyApp(themeMode: mode),
-  ));
+  runApp(
+    ValueListenableBuilder<Color>(
+      valueListenable: seedColorNotifier,
+      builder: (context, seedColor, _) {
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeModeNotifier,
+          builder: (context, mode, _) => MyApp(themeMode: mode, seedColor: seedColor),
+        );
+      },
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   final ThemeMode themeMode;
-  const MyApp({super.key, required this.themeMode});
+  final Color seedColor;
+  const MyApp({super.key, required this.themeMode, required this.seedColor});
 
   @override
   Widget build(BuildContext context) {
@@ -46,13 +55,13 @@ class MyApp extends StatelessWidget {
       title: 'Study App',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
+          seedColor: seedColor,
           brightness: Brightness.dark,
         ),
         brightness: Brightness.dark,
