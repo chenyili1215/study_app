@@ -275,10 +275,11 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             15 * 60 + 10,
                           ];
                           int currentPeriod = periods.lastIndexWhere((start) => minutes >= start) + 1;
+                          if (currentPeriod > 7) currentPeriod = 0; // 超過最後一節就歸零
                           int todayIdx = (today - 1).clamp(0, 4);
 
                           String getSubject(int period) {
-                            if (period < 1 || period > 7) return '無';
+                            if (period < 1 || period > 7) return '目前非上課時間';
                             final subject = timetable.table[todayIdx][period - 1];
                             return subject.isEmpty ? '未排課' : subject;
                           }
