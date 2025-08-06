@@ -30,6 +30,22 @@ class _SettingsPageState extends State<SettingsPage> {
   ];
   Color _selectedColor = Colors.blue;
 
+  // 新增：顏色名稱對照表
+  final Map<Color, String> _colorNames = {
+    Colors.blue: '藍色',
+    Colors.green: '綠色',
+    Colors.purple: '紫色',
+    Colors.orange: '橙色',
+    Colors.red: '紅色',
+    Colors.teal: '藍綠',
+    Colors.pink: '粉紅',
+    Colors.brown: '咖啡',
+    Colors.indigo: '靛藍',
+    Colors.cyan: '青色',
+    Colors.amber: '琥珀',
+    Colors.deepOrange: '深橙',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -178,7 +194,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ListTile(
             leading: Icon(Icons.palette, color: _selectedColor),
             title: const Text('主題顏色'),
-            subtitle: const Text('Material You'),
+            subtitle: Text(_colorNames[_selectedColor] ?? '自訂顏色'),
             trailing: Container(
               width: 28,
               height: 28,
