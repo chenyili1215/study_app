@@ -13,11 +13,13 @@ class TimetableData {
   TimetableData._internal();
 
   List<List<String>> table = List.generate(5, (_) => List.generate(7, (_) => ''));
+  String name = '我的課表'; // 新增：課表名稱
 
   Future<void> save() async {
     final prefs = await SharedPreferences.getInstance();
     final data = jsonEncode(table);
     await prefs.setString('timetable', data);
+    await prefs.setString('timetable_name', name); // 儲存名稱
   }
 
   Future<void> load() async {
@@ -29,6 +31,7 @@ class TimetableData {
         decoded.map((row) => List<String>.from(row)),
       );
     }
+    name = prefs.getString('timetable_name') ?? '我的課表'; // 讀取名稱
   }
 }
 
@@ -42,6 +45,7 @@ class TimetableImporter extends StatefulWidget {
 class _TimetableImporterState extends State<TimetableImporter> {
   final TimetableData timetable = TimetableData();
   List<List<dynamic>>? timetableData;
+  bool? _isEditing = false; // 請移到 class 內部
 
   Future<void> pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -84,7 +88,24 @@ class _TimetableImporterState extends State<TimetableImporter> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('課表', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        title: isEditing
+            ? TextFormField(
+                initialValue: timetable.name,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: '請輸入課表名稱',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                ),
+                onChanged: (v) {
+                  timetable.name = v;
+                },
+              )
+            : Text(
+                timetable.name,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
         
         actions: [
           IconButton(
@@ -370,7 +391,3 @@ class _TimetableImporterState extends State<TimetableImporter> {
     );
   }
 }
-
-// class _TimetableImporterState extends State<TimetableImporter> {
-bool? _isEditing = false;
-// ...其餘不變...
