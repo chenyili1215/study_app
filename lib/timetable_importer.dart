@@ -13,25 +13,36 @@ class TimetableData {
   TimetableData._internal();
 
   List<List<String>> table = List.generate(5, (_) => List.generate(7, (_) => ''));
-  String name = '我的課表'; // 新增：課表名稱
+  List<List<String>> locations = List.generate(5, (_) => List.generate(7, (_) => ''));
+  List<List<String>> teachers = List.generate(5, (_) => List.generate(7, (_) => ''));
+  String name = '我的課表';
 
   Future<void> save() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = jsonEncode(table);
-    await prefs.setString('timetable', data);
-    await prefs.setString('timetable_name', name); // 儲存名稱
+    await prefs.setString('timetable', jsonEncode(table));
+    await prefs.setString('timetable_locations', jsonEncode(locations));
+    await prefs.setString('timetable_teachers', jsonEncode(teachers));
+    await prefs.setString('timetable_name', name);
   }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString('timetable');
-    if (data != null) {
-      final decoded = jsonDecode(data);
-      table = List<List<String>>.from(
-        decoded.map((row) => List<String>.from(row)),
-      );
+    final tableData = prefs.getString('timetable');
+    if (tableData != null) {
+      final decoded = jsonDecode(tableData);
+      table = List<List<String>>.from(decoded.map((row) => List<String>.from(row)));
     }
-    name = prefs.getString('timetable_name') ?? '我的課表'; // 讀取名稱
+    final locData = prefs.getString('timetable_locations');
+    if (locData != null) {
+      final decoded = jsonDecode(locData);
+      locations = List<List<String>>.from(decoded.map((row) => List<String>.from(row)));
+    }
+    final teacherData = prefs.getString('timetable_teachers');
+    if (teacherData != null) {
+      final decoded = jsonDecode(teacherData);
+      teachers = List<List<String>>.from(decoded.map((row) => List<String>.from(row)));
+    }
+    name = prefs.getString('timetable_name') ?? '我的課表';
   }
 }
 
@@ -172,40 +183,155 @@ class _TimetableImporterState extends State<TimetableImporter> {
                               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                               child: AspectRatio(
                                 aspectRatio: 1, // 正方形
-                                child: Material(
-                                  elevation: 1,
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: colorScheme.surface,
-                                  child: isEditing
-                                      ? Center(
-                                          child: TextFormField(
-                                            initialValue: timetable.table[day][period],
-                                            textAlign: TextAlign.center,
-                                            maxLines: 2,
-                                            style: const TextStyle(fontSize: 16),
-                                            decoration: InputDecoration(
-                                              isDense: true,
-                                              border: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                                borderSide: BorderSide.none,
+                                child: GestureDetector(
+                                  onLongPress: () async {
+                                    final subjectController = TextEditingController(text: timetable.table[day][period]);
+                                    final locationController = TextEditingController(text: timetable.locations[day][period]);
+                                    final teacherController = TextEditingController(text: timetable.teachers[day][period]);
+                                    await showGeneralDialog(
+                                      context: context,
+                                      barrierDismissible: true,
+                                      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+                                      transitionDuration: const Duration(milliseconds: 320),
+                                      pageBuilder: (context, animation, secondaryAnimation) {
+                                        return Center(
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: AlertDialog(
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                              title: Row(
+                                                children: const [
+                                                  Icon(Icons.edit, color: Colors.blueAccent),
+                                                  SizedBox(width: 8),
+                                                  Text('詳細設定', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+                                                ],
                                               ),
-                                              filled: true,
-                                              fillColor: colorScheme.surface,
-                                              contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              content: SingleChildScrollView(
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    TextField(
+                                                      controller: subjectController,
+                                                      decoration: InputDecoration(
+                                                        labelText: '課程名稱',
+                                                        prefixIcon: const Icon(Icons.book),
+                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                                        filled: true,
+                                                        fillColor: Colors.blue.shade50,
+                                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    TextField(
+                                                      controller: locationController,
+                                                      decoration: InputDecoration(
+                                                        labelText: '上課地點',
+                                                        prefixIcon: const Icon(Icons.location_on),
+                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                                        filled: true,
+                                                        fillColor: Colors.green.shade50,
+                                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    TextField(
+                                                      controller: teacherController,
+                                                      decoration: InputDecoration(
+                                                        labelText: '老師名字',
+                                                        prefixIcon: const Icon(Icons.person),
+                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                                        filled: true,
+                                                        fillColor: Colors.orange.shade50,
+                                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              actions: [
+                                                TextButton.icon(
+                                                  icon: const Icon(Icons.save, color: Colors.blueAccent),
+                                                  label: const Text('儲存', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  onPressed: () {
+                                                    timetable.table[day][period] = subjectController.text;
+                                                    timetable.locations[day][period] = locationController.text;
+                                                    timetable.teachers[day][period] = teacherController.text;
+                                                    timetable.save();
+                                                    Navigator.of(context).pop();
+                                                    setState(() {});
+                                                  },
+                                                ),
+                                                TextButton.icon(
+                                                  icon: const Icon(Icons.cancel, color: Colors.grey),
+                                                  label: const Text('取消'),
+                                                  onPressed: () => Navigator.of(context).pop(),
+                                                ),
+                                              ],
                                             ),
-                                            onChanged: (v) {
-                                              timetable.table[day][period] = v.replaceAll("'", "");
-                                            },
                                           ),
-                                        )
-                                      : Center(
-                                          child: Text(
-                                            breakSubject(timetable.table[day][period]),
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(fontSize: 16),
-                                            softWrap: true,
+                                        );
+                                      },
+                                      transitionBuilder: (context, animation, secondaryAnimation, child) {
+                                        return ScaleTransition(
+                                          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+                                          child: FadeTransition(
+                                            opacity: animation,
+                                            child: child,
                                           ),
-                                        ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: Material(
+                                    elevation: 1,
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: colorScheme.surface,
+                                    child: isEditing
+                                        ? Center(
+                                            child: TextFormField(
+                                              initialValue: timetable.table[day][period],
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              style: const TextStyle(fontSize: 16),
+                                              decoration: InputDecoration(
+                                                isDense: true,
+                                                border: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide.none,
+                                                ),
+                                                filled: true,
+                                                fillColor: colorScheme.surface,
+                                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              ),
+                                              onChanged: (v) {
+                                                timetable.table[day][period] = v.replaceAll("'", "");
+                                              },
+                                            ),
+                                          )
+                                        : Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  breakSubject(timetable.table[day][period]),
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(fontSize: 16),
+                                                  softWrap: true,
+                                                ),
+                                                if (timetable.locations[day][period].isNotEmpty)
+                                                  Text(
+                                                    timetable.locations[day][period],
+                                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                  ),
+                                                if (timetable.teachers[day][period].isNotEmpty)
+                                                  Text(
+                                                    timetable.teachers[day][period],
+                                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                  ),
                                 ),
                               ),
                             ),
