@@ -282,9 +282,25 @@ class _TimetableImporterState extends State<TimetableImporter> {
                                                   icon: const Icon(Icons.save, color: Colors.blueAccent),
                                                   label: const Text('儲存', style: TextStyle(fontWeight: FontWeight.bold)),
                                                   onPressed: () {
-                                                    timetable.table[day][period] = subjectController.text;
-                                                    timetable.locations[day][period] = locationController.text;
-                                                    timetable.teachers[day][period] = teacherController.text;
+                                                    final subject = subjectController.text;
+                                                    final location = locationController.text;
+                                                    final teacher = teacherController.text;
+
+                                                    // 先儲存目前格
+                                                    timetable.table[day][period] = subject;
+                                                    timetable.locations[day][period] = location;
+                                                    timetable.teachers[day][period] = teacher;
+
+                                                    // 新增：同步所有同課程名稱的格子
+                                                    for (int d = 0; d < 5; d++) {
+                                                      for (int p = 0; p < timetable.periods; p++) {
+                                                        if (timetable.table[d][p] == subject && subject.isNotEmpty) {
+                                                          timetable.locations[d][p] = location;
+                                                          timetable.teachers[d][p] = teacher;
+                                                        }
+                                                      }
+                                                    }
+
                                                     timetable.save();
                                                     Navigator.of(context).pop();
                                                     setState(() {});
