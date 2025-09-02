@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'settings_page.dart';
+import 'homework.dart'; // 新增這行
 
 // 引入課表資料
 class TimetableData {
@@ -86,7 +87,8 @@ class _MainPageState extends State<MainPage> {
         HomePage(onQuickNav: onNav),
         TimetableImporter(),
         LabelEngine(),
-        const SettingsPage(), // 新增設定頁
+        HomeworkPage(), // 新增功課分頁
+        const SettingsPage(),
       ];
 
   void _onItemTapped(int index) {
@@ -102,7 +104,7 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed, // 4個以上要加這行
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -115,6 +117,10 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.label),
             label: '照片筆記',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment), // 新增：功課
+            label: '功課',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
@@ -349,5 +355,6 @@ int getCurrentPeriod() {
   if (minutes >= 13 * 60 && minutes < 14 * 60) return 5;              // 13:00~14:00
   if (minutes >= 14 * 60 && minutes < 15 * 60) return 6;              // 14:00~15:00
   if (minutes >= 15 * 60 + 10 && minutes < 16 * 60 + 10) return 7;    // 15:10~16:10
+  if (minutes >= 16 * 60 + 10 && minutes < 17 * 60 + 10) return 8; // 16:10~17:10
   return 0; // 非上課時間
 }

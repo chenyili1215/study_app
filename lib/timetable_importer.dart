@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:excel/excel.dart';
-import 'dart:io';
-import 'package:csv/csv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -12,6 +8,7 @@ class TimetableData {
   factory TimetableData() => _instance;
   TimetableData._internal();
 
+  int periods = 7; // 新增：預設 7 節
   List<List<String>> table = List.generate(5, (_) => List.generate(7, (_) => ''));
   List<List<String>> locations = List.generate(5, (_) => List.generate(7, (_) => ''));
   List<List<String>> teachers = List.generate(5, (_) => List.generate(7, (_) => ''));
@@ -23,6 +20,7 @@ class TimetableData {
     await prefs.setString('timetable_locations', jsonEncode(locations));
     await prefs.setString('timetable_teachers', jsonEncode(teachers));
     await prefs.setString('timetable_name', name);
+    await prefs.setInt('timetable_periods', periods); // 儲存節數
   }
 
   Future<void> load() async {
@@ -43,6 +41,13 @@ class TimetableData {
       teachers = List<List<String>>.from(decoded.map((row) => List<String>.from(row)));
     }
     name = prefs.getString('timetable_name') ?? '我的課表';
+    periods = prefs.getInt('timetable_periods') ?? 7; // 讀取節數
+    // 若資料長度不符，重建
+    if (table.length != 5 || table.any((row) => row.length != periods)) {
+      table = List.generate(5, (_) => List.generate(periods, (_) => ''));
+      locations = List.generate(5, (_) => List.generate(periods, (_) => ''));
+      teachers = List.generate(5, (_) => List.generate(periods, (_) => ''));
+    }
   }
 }
 
@@ -55,28 +60,7 @@ class TimetableImporter extends StatefulWidget {
 
 class _TimetableImporterState extends State<TimetableImporter> {
   final TimetableData timetable = TimetableData();
-  List<List<dynamic>>? timetableData;
-  bool? _isEditing = false; // 請移到 class 內部
-
-  Future<void> pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['csv', 'xlsx'],
-    );
-    if (result != null) {
-      final file = File(result.files.single.path!);
-      if (file.path.endsWith('.csv')) {
-        final csvString = await file.readAsString();
-        final csvTable = CsvToListConverter().convert(csvString);
-        setState(() => timetableData = csvTable);
-      } else if (file.path.endsWith('.xlsx')) {
-        final bytes = await file.readAsBytes();
-        final excel = Excel.decodeBytes(bytes);
-        final sheet = excel.tables[excel.tables.keys.first]!;
-        setState(() => timetableData = sheet.rows);
-      }
-    }
-  }
+  bool? _isEditing = false;
 
   @override
   void initState() {
@@ -91,33 +75,78 @@ class _TimetableImporterState extends State<TimetableImporter> {
     return '${subject.substring(0, mid)}\n${subject.substring(mid)}';
   }
 
+  void _showSetPeriodsDialog() async {
+    final controller = TextEditingController(text: timetable.periods.toString());
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('設定每天節數', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: '每天幾節課',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('取消'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: const Text('確定'),
+            onPressed: () {
+              final val = int.tryParse(controller.text);
+              if (val != null && val > 0 && val <= 12) {
+                setState(() {
+                  timetable.periods = val;
+                  timetable.table = List.generate(5, (_) => List.generate(val, (_) => ''));
+                  timetable.locations = List.generate(5, (_) => List.generate(val, (_) => ''));
+                  timetable.teachers = List.generate(5, (_) => List.generate(val, (_) => ''));
+                });
+                timetable.save();
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final today = DateTime.now().weekday; // 1=Monday, 7=Sunday
+    final today = DateTime.now().weekday;
     bool isEditing = _isEditing ?? false;
 
     return Scaffold(
       appBar: AppBar(
         title: isEditing
-            ? TextFormField(
-                initialValue: timetable.name,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: '請輸入課表名稱',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+            ? SizedBox(
+                height: 48,
+                child: TextFormField(
+                  initialValue: timetable.name,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    hintText: '請輸入課表名稱',
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  ),
+                  onChanged: (v) {
+                    timetable.name = v;
+                  },
                 ),
-                onChanged: (v) {
-                  timetable.name = v;
-                },
               )
             : Text(
                 timetable.name,
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-        
         actions: [
           IconButton(
             icon: Icon(isEditing ? Icons.close : Icons.edit),
@@ -164,7 +193,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                     ),
                     const Divider(height: 24),
                     // 課表表格
-                    ...List.generate(7, (period) => Padding(
+                    ...List.generate(timetable.periods, (period) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
@@ -182,7 +211,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                               child: AspectRatio(
-                                aspectRatio: 1, // 正方形
+                                aspectRatio: 1,
                                 child: GestureDetector(
                                   onLongPress: () async {
                                     final subjectController = TextEditingController(text: timetable.table[day][period]);
@@ -358,7 +387,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                                 onPressed: () async {
                                   await timetable.save();
                                   setState(() {
-                                    _isEditing = false; // 儲存後自動退出編輯模式
+                                    _isEditing = false;
                                   });
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('課表已儲存')),
@@ -369,14 +398,14 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: OutlinedButton.icon(
-                                icon: const Icon(Icons.upload_file),
-                                label: const Text('匯入課表'),
+                                icon: const Icon(Icons.settings),
+                                label: const Text('編輯課表節數'),
                                 style: OutlinedButton.styleFrom(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
-                                onPressed: pickFile,
+                                onPressed: _showSetPeriodsDialog,
                               ),
                             ),
                           ],
@@ -420,13 +449,14 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             13 * 60,
                             14 * 60,
                             15 * 60 + 10,
+                            16 * 60 + 10,
                           ];
                           int currentPeriod = periods.lastIndexWhere((start) => minutes >= start) + 1;
                           if (currentPeriod > 7) currentPeriod = 0; // 超過最後一節就歸零
                           int todayIdx = (today - 1).clamp(0, 4);
 
                           String getSubject(int period) {
-                            if (period < 1 || period > 7) return '目前非上課時間';
+                            if (period < 1 || period > timetable.periods) return '目前非上課時間';
                             final subject = timetable.table[todayIdx][period - 1];
                             return subject.isEmpty ? '未排課' : subject;
                           }
@@ -475,6 +505,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             13 * 60,
                             14 * 60,
                             15 * 60 + 10,
+                            16 * 60 + 10,
                           ];
                           int currentPeriod = periods.lastIndexWhere((start) => minutes >= start) + 1;
                           int nextPeriod = currentPeriod < 7 ? currentPeriod + 1 : 0;
