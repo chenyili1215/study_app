@@ -71,63 +71,66 @@ class _HomeworkPageState extends State<HomeworkPage> {
               Text('新增功課', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
             ],
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: selectedSubject,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: '課程',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    filled: true,
-                  ),
-                  items: subjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                  onChanged: (v) => setState(() => selectedSubject = v),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                    labelText: '功課名稱',
-                    prefixIcon: const Icon(Icons.edit),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    filled: true,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) setState(() => deadline = picked);
-                  },
-                  child: InputDecorator(
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 220), // 固定最小高度
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedSubject,
+                    isExpanded: true,
                     decoration: InputDecoration(
-                      labelText: '截止日期',
+                      labelText: '課程',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                       filled: true,
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today, color: Colors.grey),
-                        const SizedBox(width: 8),
-                        Text(
-                          deadline == null
-                              ? '請選擇日期'
-                              : '${deadline!.year}-${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ],
+                    items: subjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setState(() => selectedSubject = v),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: titleController,
+                    decoration: InputDecoration(
+                      labelText: '功課名稱',
+                      prefixIcon: const Icon(Icons.edit),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      filled: true,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) setState(() => deadline = picked);
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: '截止日期',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        filled: true,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Text(
+                            deadline == null
+                                ? '請選擇日期'
+                                : '${deadline!.year}-${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -180,7 +183,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
             child: ListTile(
               leading: Icon(Icons.assignment, color: colorScheme.primary),
               title: Text(hw.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${hw.subject}截止：${hw.deadline.year}-${hw.deadline.month.toString().padLeft(2, '0')}-${hw.deadline.day.toString().padLeft(2, '0')}'),
+              subtitle: Text('${hw.subject}  截止：${hw.deadline.year}-${hw.deadline.month.toString().padLeft(2, '0')}-${hw.deadline.day.toString().padLeft(2, '0')}'),
               trailing: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.redAccent),
                 onPressed: () async {

@@ -172,7 +172,7 @@ class _LabelEngineState extends State<LabelEngine> {
       final key = note.subject;
       map.putIfAbsent(key, () => []).add(note);
     }
-    // 新增：每科目照片依日期由新到舊排序
+    // 每科目照片依日期由新到舊排序（最新的在前面）
     map.forEach((key, list) {
       list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
     });
@@ -616,8 +616,11 @@ class _LabelEngineState extends State<LabelEngine> {
                                     ),
                                   );
                                 } else {
-                                  // 空白佔位，保持三等分
-                                  return const Expanded(child: SizedBox());
+                                  // 固定寬高佔位，避免第三張變大
+                                  return const SizedBox(
+                                    width: 0,
+                                    height: 0,
+                                  );
                                 }
                               }),
                             ),
