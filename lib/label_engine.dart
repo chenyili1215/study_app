@@ -172,6 +172,10 @@ class _LabelEngineState extends State<LabelEngine> {
       final key = note.subject;
       map.putIfAbsent(key, () => []).add(note);
     }
+    // 新增：每科目照片依日期由新到舊排序
+    map.forEach((key, list) {
+      list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    });
     return map;
   }
 
