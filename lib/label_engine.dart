@@ -247,7 +247,11 @@ class _LabelEngineState extends State<LabelEngine> {
                         setState(() {
                           selectedIndexes
                             ..sort((a, b) => b.compareTo(a))
-                            ..forEach((i) => filteredPhotos.removeAt(i));
+                            ..forEach((i) {
+                              final path = filteredPhotos[i].imagePath;
+                              File(path).delete(); // 實體檔案也刪除
+                              filteredPhotos.removeAt(i);
+                            });
                           selectedIndexes.clear();
                           isSelecting = false;
                         });
@@ -381,8 +385,12 @@ class _LabelEngineState extends State<LabelEngine> {
   Future<void> _deleteSelectedPhotos() async {
     setState(() {
       _selectedIndexes.toList()
-        ..sort((a, b) => b.compareTo(a)) // 先刪除大的index
-        ..forEach((index) => _photos.removeAt(index));
+        ..sort((a, b) => b.compareTo(a))
+        ..forEach((index) {
+          final path = _photos[index].imagePath;
+          File(path).delete(); // 實體檔案也刪除
+          _photos.removeAt(index);
+        });
       _selectedIndexes.clear();
       _isSelecting = false;
     });
@@ -550,14 +558,16 @@ class _LabelEngineState extends State<LabelEngine> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              children: List.generate(3, (index) {
-                                if (index < photos.length) {
-                                  final note = photos[index];
-                                  final globalIndex = _photos.indexOf(note);
-                                  final selected = _selectedIndexes.contains(globalIndex);
-                                  return Expanded(
-                                    child: Padding(
+                            SizedBox(
+                              height: 80, // 固定高度
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: List.generate(3, (index) {
+                                  if (index < photos.length) {
+                                    final note = photos[index];
+                                    final globalIndex = _photos.indexOf(note);
+                                    final selected = _selectedIndexes.contains(globalIndex);
+                                    return Padding(
                                       padding: EdgeInsets.only(right: index != 2 ? 12 : 0),
                                       child: GestureDetector(
                                         onLongPress: () => _onPhotoLongPress(globalIndex),
@@ -569,13 +579,12 @@ class _LabelEngineState extends State<LabelEngine> {
                                               borderRadius: BorderRadius.circular(16),
                                               child: ClipRRect(
                                                 borderRadius: BorderRadius.circular(16),
-                                                child: AspectRatio(
-                                                  aspectRatio: 1,
+                                                child: Container(
+                                                  width: 80,
+                                                  height: 80,
                                                   child: Image.file(
                                                     File(note.imagePath),
                                                     fit: BoxFit.cover,
-                                                    width: double.infinity,
-                                                    height: double.infinity,
                                                   ),
                                                 ),
                                               ),
@@ -613,16 +622,19 @@ class _LabelEngineState extends State<LabelEngine> {
                                           ],
                                         ),
                                       ),
-                                    ),
-                                  );
-                                } else {
-                                  // 固定寬高佔位，避免第三張變大
-                                  return const SizedBox(
-                                    width: 0,
-                                    height: 0,
-                                  );
-                                }
-                              }),
+                                    );
+                                  } else {
+                                    // 空白格也用固定寬高
+                                    return Padding(
+                                      padding: EdgeInsets.only(right: index != 2 ? 12 : 0),
+                                      child: Container(
+                                        width: 80,
+                                        height: 80,
+                                      ),
+                                    );
+                                  }
+                                }),
+                              ),
                             ),
                           ],
                         ),
