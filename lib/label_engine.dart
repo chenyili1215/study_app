@@ -31,28 +31,32 @@ class PhotoNote {
   final String imagePath;
   final int period;
   final String subject;
-  final DateTime dateTime; // 新增
+  final DateTime dateTime;
+  final DateTime? deletedAt; // 新增
 
   PhotoNote({
     required this.imagePath,
     required this.period,
     required this.subject,
-    required this.dateTime, // 新增
+    required this.dateTime,
+    this.deletedAt,
   });
 
   Map<String, dynamic> toJson() => {
-        'imagePath': imagePath,
-        'period': period,
-        'subject': subject,
-        'dateTime': dateTime.toIso8601String(), // 新增
-      };
+    'imagePath': imagePath,
+    'period': period,
+    'subject': subject,
+    'dateTime': dateTime.toIso8601String(),
+    'deletedAt': deletedAt?.toIso8601String(),
+  };
 
   factory PhotoNote.fromJson(Map<String, dynamic> json) => PhotoNote(
-        imagePath: json['imagePath'],
-        period: json['period'],
-        subject: json['subject'],
-        dateTime: DateTime.parse(json['dateTime'] ?? DateTime.now().toIso8601String()), // 新增
-      );
+    imagePath: json['imagePath'],
+    period: json['period'],
+    subject: json['subject'],
+    dateTime: DateTime.parse(json['dateTime'] ?? DateTime.now().toIso8601String()),
+    deletedAt: json['deletedAt'] != null ? DateTime.parse(json['deletedAt']) : null,
+  );
 }
 
 class LabelEngine extends StatefulWidget {
@@ -92,8 +96,8 @@ class _LabelEngineState extends State<LabelEngine> {
   Future<String> saveAndCompressImage(String originPath) async {
     // 讀取原始圖片
     final bytes = await File(originPath).readAsBytes();
-    img.Image? image = img.decodeImage(bytes);
-    if (image == null) throw Exception('無法解碼圖片');
+    img.Image? image = img.decodeImage(bytes); // image 套件已支援 heic
+    if (image == null) throw Exception('無法解碼圖片（可能格式不支援）');
 
     // 壓縮品質遞減直到小於2MB
     int quality = 95;
@@ -112,13 +116,15 @@ class _LabelEngineState extends State<LabelEngine> {
   }
 
   Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.camera);
+      if (pickedFile == null) return;
+      print('拍照路徑: ${pickedFile.path}');
       final savePath = await saveAndCompressImage(pickedFile.path);
       int period = getCurrentPeriod();
       DateTime now = DateTime.now();
-      int weekday = now.weekday; // 1=Monday, 7=Sunday
+      int weekday = now.weekday;
       String subject = '';
       if (weekday >= 1 && weekday <= 5 && period > 0) {
         subject = TimetableData().table[weekday - 1][period - 1];
@@ -133,12 +139,31 @@ class _LabelEngineState extends State<LabelEngine> {
         ));
       });
       await _savePhotos();
+    } catch (e, st) {
+      print('拍照錯誤: $e\n$st');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('拍照失敗: $e')),
+      );
     }
   }
 
   Future<void> deletePhoto(int index, String subject) async {
     setState(() {
       _photos.removeWhere((note) => note.subject == subject && _photos.indexOf(note) == index);
+    });
+    await _savePhotos();
+  }
+
+  // 刪除時不要直接移除，改設 deletedAt
+  void deletePhotoToTrash(int index) async {
+    setState(() {
+      _photos[index] = PhotoNote(
+        imagePath: _photos[index].imagePath,
+        period: _photos[index].period,
+        subject: _photos[index].subject,
+        dateTime: _photos[index].dateTime,
+        deletedAt: DateTime.now(),
+      );
     });
     await _savePhotos();
   }
@@ -430,40 +455,93 @@ class _LabelEngineState extends State<LabelEngine> {
     }
   }
 
+  void _openTrash() {
+    // 自動清理超過30天的照片
+    final now = DateTime.now();
+    final trashPhotos = _photos.where((p) => p.deletedAt != null).toList();
+    trashPhotos.removeWhere((p) {
+      final expired = now.difference(p.deletedAt!).inDays >= 30;
+      if (expired) File(p.imagePath).delete();
+      return expired;
+    });
+    setState(() {
+      _photos.removeWhere((p) => p.deletedAt != null && now.difference(p.deletedAt!).inDays >= 30);
+    });
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('垃圾桶')),
+        body: trashPhotos.isEmpty
+          ? const Center(child: Text('垃圾桶是空的'))
+          : ListView.builder(
+              itemCount: trashPhotos.length,
+              itemBuilder: (context, index) {
+                final note = trashPhotos[index];
+                return ListTile(
+                  leading: Image.file(File(note.imagePath), width: 48, height: 48, fit: BoxFit.cover),
+                  title: Text(note.subject),
+                  subtitle: Text('刪除於：${note.deletedAt!.toLocal().toString().split(' ')[0]}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.restore),
+                        tooltip: '復原',
+                        onPressed: () async {
+                          setState(() {
+                            final idx = _photos.indexOf(note);
+                            if (idx != -1) {
+                              _photos[idx] = PhotoNote(
+                                imagePath: note.imagePath,
+                                period: note.period,
+                                subject: note.subject,
+                                dateTime: note.dateTime,
+                                deletedAt: null,
+                              );
+                            }
+                          });
+                          await _savePhotos();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_forever),
+                        tooltip: '永久刪除',
+                        onPressed: () async {
+                          File(note.imagePath).delete();
+                          setState(() {
+                            _photos.remove(note);
+                          });
+                          await _savePhotos();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: _isSelecting
-          ? AppBar(
-              title: Text('已選擇 ${_selectedIndexes.length} 張'),
-              backgroundColor: Colors.transparent, // 讓標題列透明
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.share),
-                  tooltip: '分享',
-                  onPressed: () async {
-                    final files = _selectedIndexes
-                        .map((i) => XFile(_photos[i].imagePath))
-                        .toList();
-                    if (files.isNotEmpty) {
-                      await Share.shareXFiles(files, text: '分享我的課堂照片');
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: _deleteSelectedPhotos,
-                ),
-              ],
-            )
-          : AppBar(
-              title: const Text(
-                '照片筆記',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              backgroundColor: Colors.transparent, // 讓標題列透明
-            ),
+      appBar: AppBar(
+        title: const Text(
+          '照片筆記',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: '垃圾桶',
+            onPressed: () => _openTrash(),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           // 搜尋框
@@ -501,7 +579,7 @@ class _LabelEngineState extends State<LabelEngine> {
                       ),
                     ),
                   ...filteredSubjects.map((subject) {
-  final photos = groupedBySubject[subject]!;
+  final photos = groupedBySubject[subject]!.where((p) => p.deletedAt == null).toList();
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
     child: Material(
