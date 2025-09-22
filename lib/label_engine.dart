@@ -355,32 +355,7 @@ class _LabelEngineState extends State<LabelEngine> {
     ));
   }
 
-  void _onPhotoLongPress(int globalIndex) {
-    setState(() {
-      _isSelecting = true;
-      _selectedIndexes.add(globalIndex);
-    });
-  }
 
-  void _onPhotoTap(int globalIndex) {
-    if (_isSelecting) {
-      setState(() {
-        if (_selectedIndexes.contains(globalIndex)) {
-          _selectedIndexes.remove(globalIndex);
-          if (_selectedIndexes.isEmpty) _isSelecting = false;
-        } else {
-          _selectedIndexes.add(globalIndex);
-        }
-      });
-    } else {
-      // 找到該照片在分組中的索引
-      final entry = groupedBySubject.entries
-          .expand((e) => e.value)
-          .toList();
-      final index = entry.indexWhere((note) => _photos[globalIndex] == note);
-      openGallery(index >= 0 ? index : 0, entry);
-    }
-  }
 
   Future<void> _deleteSelectedPhotos() async {
     setState(() {
@@ -526,121 +501,37 @@ class _LabelEngineState extends State<LabelEngine> {
                       ),
                     ),
                   ...filteredSubjects.map((subject) {
-                    final photos = groupedBySubject[subject]!;
-                    return Card(
-                      elevation: 3,
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      color: colorScheme.surfaceContainerHighest,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    subject,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.primary,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.arrow_forward_ios_rounded, color: colorScheme.primary),
-                                  tooltip: '檢視全部',
-                                  onPressed: () => _openSubjectPhotos(subject, photos),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 80, // 固定高度
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: List.generate(3, (index) {
-                                  if (index < photos.length) {
-                                    final note = photos[index];
-                                    final globalIndex = _photos.indexOf(note);
-                                    final selected = _selectedIndexes.contains(globalIndex);
-                                    return Padding(
-                                      padding: EdgeInsets.only(right: index != 2 ? 12 : 0),
-                                      child: GestureDetector(
-                                        onLongPress: () => _onPhotoLongPress(globalIndex),
-                                        onTap: () => _onPhotoTap(globalIndex),
-                                        child: Stack(
-                                          children: [
-                                            Material(
-                                              elevation: selected ? 8 : 2,
-                                              borderRadius: BorderRadius.circular(16),
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(16),
-                                                child: Container(
-                                                  width: 80,
-                                                  height: 80,
-                                                  child: Image.file(
-                                                    File(note.imagePath),
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            if (selected)
-                                              Positioned(
-                                                top: 6,
-                                                right: 6,
-                                                child: Icon(Icons.check_circle, color: colorScheme.primary, size: 28),
-                                              ),
-                                            Positioned(
-                                              bottom: 0,
-                                              left: 0,
-                                              right: 0,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: colorScheme.secondaryContainer.withOpacity(0.85),
-                                                  borderRadius: const BorderRadius.only(
-                                                    bottomLeft: Radius.circular(16),
-                                                    bottomRight: Radius.circular(16),
-                                                  ),
-                                                ),
-                                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                                child: Text(
-                                                  // 顯示日期
-                                                  '${note.dateTime.year}-${note.dateTime.month.toString().padLeft(2, '0')}-${note.dateTime.day.toString().padLeft(2, '0')}',
-                                                  style: TextStyle(
-                                                    fontSize: 15,
-                                                    color: colorScheme.onSecondaryContainer,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    // 空白格也用固定寬高
-                                    return Padding(
-                                      padding: EdgeInsets.only(right: index != 2 ? 12 : 0),
-                                      child: Container(
-                                        width: 80,
-                                        height: 80,
-                                      ),
-                                    );
-                                  }
-                                }),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
+  final photos = groupedBySubject[subject]!;
+  return Card(
+    elevation: 3,
+    margin: const EdgeInsets.symmetric(vertical: 12),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    color: colorScheme.surfaceContainerHighest,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              subject,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.arrow_forward_ios_rounded, color: colorScheme.primary),
+            tooltip: '檢視全部',
+            onPressed: () => _openSubjectPhotos(subject, photos),
+          ),
+        ],
+      ),
+    ),
+  );
+}),
                 ],
               ),
             ),
