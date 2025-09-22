@@ -502,32 +502,23 @@ class _LabelEngineState extends State<LabelEngine> {
                     ),
                   ...filteredSubjects.map((subject) {
   final photos = groupedBySubject[subject]!;
-  return Card(
-    elevation: 3,
-    margin: const EdgeInsets.symmetric(vertical: 12),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    color: colorScheme.surfaceContainerHighest,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              subject,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
-                letterSpacing: 1,
-              ),
-            ),
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          subject,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
           ),
-          IconButton(
-            icon: Icon(Icons.arrow_forward_ios_rounded, color: colorScheme.primary),
-            tooltip: '檢視全部',
-            onPressed: () => _openSubjectPhotos(subject, photos),
-          ),
-        ],
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded),
+        onTap: () => _openSubjectPhotos(subject, photos),
       ),
     ),
   );
