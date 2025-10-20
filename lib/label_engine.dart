@@ -68,8 +68,6 @@ class LabelEngine extends StatefulWidget {
 
 class _LabelEngineState extends State<LabelEngine> {
   final List<PhotoNote> _photos = [];
-  final Set<int> _selectedIndexes = {};
-  bool _isSelecting = false;
   String _searchText = '';
 
   @override
@@ -148,12 +146,25 @@ class _LabelEngineState extends State<LabelEngine> {
   }
 
   Future<void> deletePhoto(int index, String subject) async {
-    setState(() {
-      _photos.removeWhere((note) => note.subject == subject && _photos.indexOf(note) == index);
-    });
-    await _savePhotos();
+    // 找到該科目（未刪除）的照片清單，將對應項目標記為 deletedAt（移到垃圾桶）
+    final subjectPhotos = _photos.where((p) => p.subject == subject && p.deletedAt == null).toList();
+    if (index < 0 || index >= subjectPhotos.length) return;
+    final note = subjectPhotos[index];
+    final idx = _photos.indexWhere((p) => p.imagePath == note.imagePath && p.dateTime == note.dateTime);
+    if (idx != -1) {
+      setState(() {
+        _photos[idx] = PhotoNote(
+          imagePath: _photos[idx].imagePath,
+          period: _photos[idx].period,
+          subject: _photos[idx].subject,
+          dateTime: _photos[idx].dateTime,
+          deletedAt: DateTime.now(),
+        );
+      });
+      await _savePhotos();
+    }
   }
-
+  
   // 刪除時不要直接移除，改設 deletedAt
   void deletePhotoToTrash(int index) async {
     setState(() {
@@ -269,19 +280,34 @@ class _LabelEngineState extends State<LabelEngine> {
                     IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () async {
+                        final now = DateTime.now();
                         setState(() {
+                          // 從大到小處理選取索引，並在 _photos 中標記 deletedAt
                           selectedIndexes
                             ..sort((a, b) => b.compareTo(a))
                             ..forEach((i) {
-                              final path = filteredPhotos[i].imagePath;
-                              File(path).delete(); // 實體檔案也刪除
-                              filteredPhotos.removeAt(i);
+                              final note = filteredPhotos[i];
+                              final idx = _photos.indexWhere((p) =>
+                                  p.imagePath == note.imagePath && p.dateTime == note.dateTime);
+                              if (idx != -1) {
+                                _photos[idx] = PhotoNote(
+                                  imagePath: _photos[idx].imagePath,
+                                  period: _photos[idx].period,
+                                  subject: _photos[idx].subject,
+                                  dateTime: _photos[idx].dateTime,
+                                  deletedAt: now,
+                                );
+                              }
                             });
+                          // 重新過濾出未刪除的照片供畫面顯示
+                          filteredPhotos = photos.where((p) {
+                            final idx = _photos.indexWhere((x) =>
+                                x.imagePath == p.imagePath && x.dateTime == p.dateTime);
+                            return idx != -1 && _photos[idx].deletedAt == null;
+                          }).toList();
                           selectedIndexes.clear();
                           isSelecting = false;
                         });
-                        // 這裡同步刪除主資料
-                        _photos.removeWhere((p) => photos.contains(p) && !filteredPhotos.contains(p));
                         await _savePhotos();
                       },
                     ),
@@ -382,20 +408,6 @@ class _LabelEngineState extends State<LabelEngine> {
 
 
 
-  Future<void> _deleteSelectedPhotos() async {
-    setState(() {
-      _selectedIndexes.toList()
-        ..sort((a, b) => b.compareTo(a))
-        ..forEach((index) {
-          final path = _photos[index].imagePath;
-          File(path).delete(); // 實體檔案也刪除
-          _photos.removeAt(index);
-        });
-      _selectedIndexes.clear();
-      _isSelecting = false;
-    });
-    await _savePhotos();
-  }
 
   Future<void> pickFileAndChooseSubject() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
