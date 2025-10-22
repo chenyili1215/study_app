@@ -5,7 +5,6 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:file_picker/file_picker.dart'; // 請加這行
 import 'package:share_plus/share_plus.dart'; // 新增
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -410,12 +409,18 @@ class _LabelEngineState extends State<LabelEngine> {
 
 
   Future<void> pickFileAndChooseSubject() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.path != null) {
-      final savePath = await saveAndCompressImage(result.files.single.path!);
+    try {
+      final picker = ImagePicker();
+      // 從相簿選圖（改成 single pick）
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked == null) return;
+
+      final savePath = await saveAndCompressImage(picked.path);
+
       // 取得所有課表科目（去除重複與空白）
       final subjects = TimetableData().table.expand((e) => e).toSet().where((s) => s.isNotEmpty).toList();
       String? selectedSubject = subjects.isNotEmpty ? subjects.first : '';
+
       await showDialog(
         context: context,
         builder: (context) {
@@ -464,6 +469,9 @@ class _LabelEngineState extends State<LabelEngine> {
           );
         },
       );
+    } catch (e, st) {
+      print('從相簿加入錯誤: $e\n$st');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('加入圖片失敗: $e')));
     }
   }
 

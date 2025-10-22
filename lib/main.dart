@@ -140,9 +140,12 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late Timer _timer;
   DateTime _now = DateTime.now();
+
+  // 新增：即將到期的功課清單
+  List<Homework> _upcomingHomeworks = [];
 
   @override
   void initState() {
@@ -155,12 +158,60 @@ class _HomePageState extends State<HomePage> {
         _now = DateTime.now();
       });
     });
+
+    // 載入功課
+    _loadUpcomingHomeworks();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     _timer.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  // 當 App 回到 foreground 時重新載入（以便從功課頁回來後更新）
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadUpcomingHomeworks();
+    }
+  }
+
+  Future<void> _loadUpcomingHomeworks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList('homeworks') ?? [];
+    final now = DateTime.now();
+    final result = list.map((e) {
+      try {
+        return Homework.fromJson(Map<String, dynamic>.from(jsonDecode(e)));
+      } catch (_) {
+        return null;
+      }
+    }).whereType<Homework>().toList();
+
+    // 過濾 7 天內 (包含今天)，並依截止日由近到遠排序
+    final upcoming = result.where((h) {
+      final diff = h.deadline.difference(DateTime(now.year, now.month, now.day)).inDays;
+      return diff >= 0 && diff <= 7;
+    }).toList();
+
+    upcoming.sort((a, b) => a.deadline.compareTo(b.deadline));
+
+    setState(() {
+      _upcomingHomeworks = upcoming;
+    });
+  }
+
+  String _formatDeadlineLabel(DateTime d) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(d.year, d.month, d.day);
+    final days = target.difference(today).inDays;
+    if (days == 0) return '今天';
+    if (days == 1) return '明天';
+    return '還有 ${days} 天';
   }
 
   String getCurrentClass() {
@@ -255,7 +306,84 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+
+                  const SizedBox(height: 24),
+
+                  // 新增：未來 7 天內要交的功課區塊
+                  Text(
+                    "接下來 7 天要交的功課",
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    color: colorScheme.surfaceVariant,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SizedBox(
+                        height: 140, // 卡片內部固定高度，可滑動
+                        child: _upcomingHomeworks.isEmpty
+                            ? Center(
+                                child: Text(
+                                  '未來 7 天內沒有功課',
+                                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                ),
+                              )
+                            : Scrollbar(
+                                radius: const Radius.circular(8),
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  itemCount: _upcomingHomeworks.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                                  itemBuilder: (context, idx) {
+                                    final hw = _upcomingHomeworks[idx];
+                                    return Material(
+                                      color: colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                        title: Text(hw.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                        subtitle: Text(hw.subject),
+                                        trailing: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              '${hw.deadline.year}-${hw.deadline.month.toString().padLeft(2, '0')}-${hw.deadline.day.toString().padLeft(2, '0')}',
+                                              style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _formatDeadlineLabel(hw.deadline),
+                                              style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
+                                        onTap: () async {
+                                          // 點擊可以跳到功課頁（需要刷新列表時可在返回時重新載入）
+                                          final nav = Navigator.of(context).push(
+                                            MaterialPageRoute(builder: (_) => const HomeworkPage()),
+                                          );
+                                          await nav;
+                                          _loadUpcomingHomeworks();
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
                   Text(
                     "目前課程",
                     style: TextStyle(
