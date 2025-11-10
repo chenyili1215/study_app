@@ -230,9 +230,52 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return "$subject (第$period節)";
   }
 
+  // 新增：取得下一節課資訊（subject, period, startTime）
+  Map<String, dynamic> getNextClassInfo() {
+    final now = DateTime.now();
+    final minutes = now.hour * 60 + now.minute;
+    // period 時間區間改為開始時間映射（若你有不同時間表請調整）
+    final periodStarts = {
+      1: 8 * 60 + 10,
+      2: 9 * 60 + 10,
+      3: 10 * 60 + 10,
+      4: 11 * 60 + 10,
+      5: 13 * 60,
+      6: 14 * 60,
+      7: 15 * 60 + 10,
+      8: 16 * 60 + 10,
+    };
+
+    // 找出目前還沒開始的最早節次
+    for (int p = 1; p <= 8; p++) {
+      final start = periodStarts[p]!;
+      if (minutes < start) {
+        // 找到下一節
+        final weekday = now.weekday;
+        String subject = '';
+        if (weekday >= 1 && weekday <= 5 && p <= TimetableData().table[weekday - 1].length) {
+          subject = TimetableData().table[weekday - 1][p - 1];
+        }
+        if (subject.isEmpty) subject = '未排課 (第$p節)';
+        // 格式化時間顯示
+        final hh = (start ~/ 60).toString().padLeft(2, '0');
+        final mm = (start % 60).toString().padLeft(2, '0');
+        return {
+          'period': p,
+          'subject': subject,
+          'startTime': '$hh:$mm',
+        };
+      }
+    }
+
+    // 若當日已無下一節，回傳空
+    return {'period': 0, 'subject': '今天沒有更多課程', 'startTime': ''};
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final nextInfo = getNextClassInfo(); // 取得資料
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
@@ -413,6 +456,48 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 32),
+
+                  // 新增：下一節課程（放在目前課程下方）
+                  Text(
+                    "下一節課程",
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    color: colorScheme.surfaceVariant,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: Icon(Icons.next_plan, color: colorScheme.primary, size: 36),
+                      title: Text(
+                        nextInfo['subject'] as String,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: (nextInfo['period'] as int) > 0
+                          ? Text('第${nextInfo['period']}節 • 開始時間 ${nextInfo['startTime']}')
+                          : Text(nextInfo['subject'] as String),
+                      trailing: nextInfo['period'] as int > 0
+                          ? Text(
+                              nextInfo['startTime'] as String,
+                              style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
+                            )
+                          : null,
+                      onTap: () {
+                        // 可跳轉到課表或顯示詳細，可自行修改需求
+                        widget.onQuickNav?.call(1);
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
                   // 可擴充更多功能入口
                   Text(
                     "快速功能",
