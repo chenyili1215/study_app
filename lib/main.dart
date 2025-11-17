@@ -413,7 +413,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
-
+                  // 新增：下節課程區塊
                   const SizedBox(height: 12),
                   Card(
                     elevation: 1,
@@ -431,7 +431,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+
+                  const SizedBox(height: 24),
 
                   Text(
                     "下一節課程",
@@ -531,15 +532,29 @@ int getCurrentPeriod() {
 }
 
 String getNextClass() {
-  final now = DateTime.now();
-  final weekday = now.weekday;
-  final timetable = TimetableData();
-  if (weekday < 1 || weekday > 5) return '目前非上課時間';
+  try {
+    final now = DateTime.now();
+    final weekday = now.weekday;
+    final timetable = TimetableData();
+    
+    // 週末或非上課時間
+    if (weekday < 1 || weekday > 5) return '今天非上課日';
 
-  final currentPeriod = getCurrentPeriod();
-  final nextPeriod = currentPeriod + 1;
-  if (nextPeriod < 1 || nextPeriod > timetable.periods) return '目前非上課時間';
+    final currentPeriod = getCurrentPeriod();
+    final nextPeriod = currentPeriod + 1;
+    
+    // 已過最後一節
+    if (nextPeriod < 1 || nextPeriod > timetable.periods) return '今天已無課程';
 
-  final subject = timetable.table[weekday - 1][nextPeriod - 1];
-  return subject.isEmpty ? '未排課' : subject;
+    // 檢查 table 是否有資料
+    if (timetable.table.isEmpty || timetable.table[weekday - 1].isEmpty) {
+      return '未排課 (第$nextPeriod節)';
+    }
+
+    final subject = timetable.table[weekday - 1][nextPeriod - 1];
+    return subject.isEmpty ? '未排課 (第$nextPeriod節)' : subject;
+  } catch (e) {
+    print('getNextClass 錯誤: $e');
+    return '未排課';
+  }
 }

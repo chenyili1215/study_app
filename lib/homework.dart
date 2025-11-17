@@ -65,9 +65,9 @@ class _HomeworkPageState extends State<HomeworkPage> {
         builder: (context, setState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Row(
-            children: const [
-              Icon(Icons.assignment, color: Colors.blueAccent),
-              SizedBox(width: 8),
+            children: [
+              Icon(Icons.assignment, color: colorScheme.primary),
+              const SizedBox(width: 8),
               Text('新增功課', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
             ],
           ),
@@ -140,7 +140,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton.icon(
-              icon: const Icon(Icons.save, color: Colors.blueAccent),
+              icon: Icon(Icons.save, color: colorScheme.primary),
               label: const Text('儲存'),
               onPressed: () {
                 if (selectedSubject != null && titleController.text.isNotEmpty && deadline != null) {
