@@ -196,8 +196,8 @@ class _HomeworkPageState extends State<HomeworkPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blueAccent,
-        
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         onPressed: _showAddHomeworkDialog,
         child: const Icon(Icons.add, size: 32),
       ),

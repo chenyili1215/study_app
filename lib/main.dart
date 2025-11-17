@@ -218,23 +218,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     };
 
     int nextPeriod = 1;
+    bool found = false;
     for (int p = 1; p <= 8; p++) {
       final start = periodStarts[p]!;
       if (minutes < start) {
         nextPeriod = p;
+        found = true;
         break;
       }
-      if (p == 8) nextPeriod = 0; // 已過最後一節
     }
+    if (!found) nextPeriod = 0; // 已過最後一節
 
     final weekday = now.weekday;
     String subject = '';
-    if (weekday >= 1 && weekday <= 5 && nextPeriod > 0 && nextPeriod <= TimetableData().table[weekday - 1].length) {
-      subject = TimetableData().table[weekday - 1][nextPeriod - 1];
+    if (weekday >= 1 && weekday <= 5 && nextPeriod > 0) {
+      final table = TimetableData().table;
+      if (table.length >= weekday && table[weekday - 1].length >= nextPeriod) {
+        subject = table[weekday - 1][nextPeriod - 1];
+      }
     }
     if (subject.isEmpty) subject = nextPeriod > 0 ? '未排課 (第$nextPeriod節)' : '今天已無課程';
 
-    final startTime = nextPeriod > 0 ? '${(periodStarts[nextPeriod]! ~/ 60).toString().padLeft(2, '0')}:${(periodStarts[nextPeriod]! % 60).toString().padLeft(2, '0')}' : '';
+    final startTime = nextPeriod > 0
+        ? '${(periodStarts[nextPeriod]! ~/ 60).toString().padLeft(2, '0')}:${(periodStarts[nextPeriod]! % 60).toString().padLeft(2, '0')}'
+        : '';
     return {'period': nextPeriod, 'subject': subject, 'startTime': startTime};
   }
 
