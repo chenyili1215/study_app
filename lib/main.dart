@@ -5,15 +5,13 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'settings_page.dart';
-import 'homework.dart'; // 確保有 HomeworkPage 實作
+import 'homework.dart';
 
-// 簡單的課表單例（儲存在 SharedPreferences）
 class TimetableData {
   static final TimetableData _instance = TimetableData._internal();
   factory TimetableData() => _instance;
   TimetableData._internal();
 
-  // 5天，每天7節（預設空白）
   List<List<String>> table = List.generate(5, (_) => List.generate(7, (_) => ''));
 
   int get periods => 7;
@@ -30,7 +28,6 @@ class TimetableData {
   }
 }
 
-// 簡單的全域 notifiers（你可改成從 SharedPreferences 初始化）
 ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.system);
 ValueNotifier<Color> seedColorNotifier = ValueNotifier(Colors.blue);
 
@@ -203,52 +200,34 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return "$subject (第$period節)";
   }
 
-  Map<String, dynamic> getNextClassInfo() {
-    final now = DateTime.now();
-    final minutes = now.hour * 60 + now.minute;
-    final periodStarts = {
-      1: 8 * 60 + 10,
-      2: 9 * 60 + 10,
-      3: 10 * 60 + 10,
-      4: 11 * 60 + 10,
-      5: 13 * 60,
-      6: 14 * 60,
-      7: 15 * 60 + 10,
-      8: 16 * 60 + 10,
-    };
+  String getNextClass() {
+    try {
+      final now = DateTime.now();
+      final weekday = now.weekday;
+      final timetable = TimetableData();
+      
+      if (weekday < 1 || weekday > 5) return '今天非上課日';
 
-    int nextPeriod = 1;
-    bool found = false;
-    for (int p = 1; p <= 8; p++) {
-      final start = periodStarts[p]!;
-      if (minutes < start) {
-        nextPeriod = p;
-        found = true;
-        break;
+      final currentPeriod = getCurrentPeriod();
+      final nextPeriod = currentPeriod + 1;
+      
+      if (nextPeriod < 1 || nextPeriod > timetable.periods) return '今天已無課程';
+
+      if (timetable.table.isEmpty || timetable.table[weekday - 1].isEmpty) {
+        return '未排課 (第$nextPeriod節)';
       }
-    }
-    if (!found) nextPeriod = 0; // 已過最後一節
 
-    final weekday = now.weekday;
-    String subject = '';
-    if (weekday >= 1 && weekday <= 5 && nextPeriod > 0) {
-      final table = TimetableData().table;
-      if (table.length >= weekday && table[weekday - 1].length >= nextPeriod) {
-        subject = table[weekday - 1][nextPeriod - 1];
-      }
+      final subject = timetable.table[weekday - 1][nextPeriod - 1];
+      return subject.isEmpty ? '未排課 (第$nextPeriod節)' : subject;
+    } catch (e) {
+      print('getNextClass 錯誤: $e');
+      return '未排課';
     }
-    if (subject.isEmpty) subject = nextPeriod > 0 ? '未排課 (第$nextPeriod節)' : '今天已無課程';
-
-    final startTime = nextPeriod > 0
-        ? '${(periodStarts[nextPeriod]! ~/ 60).toString().padLeft(2, '0')}:${(periodStarts[nextPeriod]! % 60).toString().padLeft(2, '0')}'
-        : '';
-    return {'period': nextPeriod, 'subject': subject, 'startTime': startTime};
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final nextInfo = getNextClassInfo();
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
@@ -279,45 +258,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    color: colorScheme.primaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "${_now.hour.toString().padLeft(2, '0')}:${_now.minute.toString().padLeft(2, '0')}:${_now.second.toString().padLeft(2, '0')}",
-                                style: TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onPrimaryContainer,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "${_now.year}-${_now.month.toString().padLeft(2, '0')}-${_now.day.toString().padLeft(2, '0')}",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Icon(Icons.access_time_filled_rounded, color: colorScheme.primary, size: 48),
-                        ],
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 24),
-
                   Text(
                     "接下來 7 天要交的功課",
                     style: TextStyle(
@@ -335,38 +276,48 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: SizedBox(
-                        height: 140,
+                        height: 220,
                         child: _upcomingHomeworks.isEmpty
                             ? Center(
-                                child: Text('未來 7 天內沒有功課', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                                child: Text(
+                                  '未來 7 天內沒有功課',
+                                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                ),
                               )
                             : Scrollbar(
                                 radius: const Radius.circular(8),
                                 child: ListView.separated(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                                   itemCount: _upcomingHomeworks.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                                   itemBuilder: (context, idx) {
                                     final hw = _upcomingHomeworks[idx];
                                     return Material(
                                       color: colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
+                                      clipBehavior: Clip.hardEdge,
                                       child: ListTile(
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                        title: Text(hw.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                        subtitle: Text(hw.subject),
-                                        trailing: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        title: Text(
+                                          hw.title,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
+                                            const SizedBox(height: 4),
                                             Text(
-                                              '${hw.deadline.year}-${hw.deadline.month.toString().padLeft(2, '0')}-${hw.deadline.day.toString().padLeft(2, '0')}',
-                                              style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                              hw.subject,
+                                              style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              _formatDeadlineLabel(hw.deadline),
-                                              style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                                              '${hw.deadline.year}-${hw.deadline.month.toString().padLeft(2, '0')}-${hw.deadline.day.toString().padLeft(2, '0')} • ${_formatDeadlineLabel(hw.deadline)}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: colorScheme.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -386,9 +337,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   Text(
-                    "目前課程",
+                    "課程資訊",
                     style: TextStyle(
                       fontSize: 20,
                       color: colorScheme.secondary,
@@ -401,111 +351,75 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     elevation: 1,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     color: colorScheme.secondaryContainer,
-                    child: ListTile(
-                      leading: Icon(Icons.class_, color: colorScheme.secondary, size: 32),
-                      title: Text(
-                        getCurrentClass(),
-                        style: TextStyle(
-                          fontSize: 22,
-                          color: colorScheme.onSecondaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 新增：下節課程區塊
-                  const SizedBox(height: 12),
-                  Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    color: colorScheme.secondaryContainer,
-                    child: ListTile(
-                      leading: Icon(Icons.arrow_forward, color: colorScheme.secondary, size: 32),
-                      title: Text(
-                        getNextClass(),
-                        style: TextStyle(
-                          fontSize: 22,
-                          color: colorScheme.onSecondaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Text(
-                    "下一節課程",
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    color: colorScheme.surfaceVariant,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      leading: Icon(Icons.next_plan, color: colorScheme.primary, size: 36),
-                      title: Text(
-                        nextInfo['subject'] as String,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: (nextInfo['period'] as int) > 0
-                          ? Text('第${nextInfo['period']}節 • 開始時間 ${nextInfo['startTime']}')
-                          : Text(nextInfo['subject'] as String),
-                      trailing: (nextInfo['period'] as int) > 0
-                          ? Text(
-                              nextInfo['startTime'] as String,
-                              style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
-                            )
-                          : null,
-                      onTap: () {
-                        widget.onQuickNav?.call(1);
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-                  Text(
-                    "快速功能",
-                    style: TextStyle(fontSize: 18, color: colorScheme.primary, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.class_, color: colorScheme.secondary, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '目前課程',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSecondaryContainer.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      getCurrentClass(),
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onSecondaryContainer,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          icon: const Icon(Icons.table_chart),
-                          label: const Text("課表"),
-                          onPressed: () => widget.onQuickNav?.call(1),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.secondary,
-                            foregroundColor: colorScheme.onSecondary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          const SizedBox(height: 16),
+                          Divider(color: colorScheme.onSecondaryContainer.withOpacity(0.2)),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Icon(Icons.arrow_forward, color: colorScheme.secondary, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '下節課程',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSecondaryContainer.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      getNextClass(),
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onSecondaryContainer,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          icon: const Icon(Icons.label),
-                          label: const Text("照片筆記"),
-                          onPressed: () => widget.onQuickNav?.call(2),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -529,32 +443,4 @@ int getCurrentPeriod() {
   if (minutes >= 15 * 60 + 10 && minutes < 16 * 60 + 10) return 7;
   if (minutes >= 16 * 60 + 10 && minutes < 17 * 60 + 10) return 8;
   return 0;
-}
-
-String getNextClass() {
-  try {
-    final now = DateTime.now();
-    final weekday = now.weekday;
-    final timetable = TimetableData();
-    
-    // 週末或非上課時間
-    if (weekday < 1 || weekday > 5) return '今天非上課日';
-
-    final currentPeriod = getCurrentPeriod();
-    final nextPeriod = currentPeriod + 1;
-    
-    // 已過最後一節
-    if (nextPeriod < 1 || nextPeriod > timetable.periods) return '今天已無課程';
-
-    // 檢查 table 是否有資料
-    if (timetable.table.isEmpty || timetable.table[weekday - 1].isEmpty) {
-      return '未排課 (第$nextPeriod節)';
-    }
-
-    final subject = timetable.table[weekday - 1][nextPeriod - 1];
-    return subject.isEmpty ? '未排課 (第$nextPeriod節)' : subject;
-  } catch (e) {
-    print('getNextClass 錯誤: $e');
-    return '未排課';
-  }
 }

@@ -53,53 +53,45 @@ class _HomeworkPageState extends State<HomeworkPage> {
     await prefs.setStringList('homeworks', list);
   }
 
-  void _showAddHomeworkDialog() async {
-    final subjects = TimetableData().table.expand((e) => e).toSet().where((s) => s.isNotEmpty).toList();
-    String? selectedSubject = subjects.isNotEmpty ? subjects.first : '';
+  void _showAddHomeworkDialog() {
+    final colorScheme = Theme.of(context).colorScheme; // 新增這行
     final titleController = TextEditingController();
     DateTime? deadline;
+    String? selectedSubject;
 
-    await showDialog(
+    showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Row(
-            children: [
-              Icon(Icons.assignment, color: colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('新增功課', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-            ],
-          ),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 220), // 固定最小高度
-            child: SingleChildScrollView(
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Row(
+              children: [
+                Icon(Icons.assignment, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('新增功課', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+              ],
+            ),
+            content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    value: selectedSubject,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: '課程',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      filled: true,
-                    ),
-                    items: subjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                    onChanged: (v) => setState(() => selectedSubject = v),
+                    hint: const Text('選擇科目'),
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    items: TimetableData().table.expand((e) => e).toSet().where((s) => s.isNotEmpty).map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => selectedSubject = v,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: titleController,
-                    decoration: InputDecoration(
-                      labelText: '功課名稱',
-                      prefixIcon: const Icon(Icons.edit),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      filled: true,
+                    decoration: const InputDecoration(
+                      hintText: '功課標題',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  InkWell(
+                  const SizedBox(height: 12),
+                  GestureDetector(
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
@@ -107,58 +99,45 @@ class _HomeworkPageState extends State<HomeworkPage> {
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
-                      if (picked != null) setState(() => deadline = picked);
+                      if (picked != null) {
+                        setState(() => deadline = picked);
+                      }
                     },
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: '截止日期',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                        filled: true,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: Colors.grey),
-                          const SizedBox(width: 8),
-                          Text(
-                            deadline == null
-                                ? '請選擇日期'
-                                : '${deadline!.year}-${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(border: Border.all()),
+                      child: Text(deadline == null ? '選擇截止日期' : '${deadline!.year}-${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}'),
                     ),
                   ),
                 ],
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              TextButton.icon(
+                icon: Icon(Icons.save, color: colorScheme.primary),
+                label: const Text('儲存'),
+                onPressed: () {
+                  if (selectedSubject != null && titleController.text.isNotEmpty && deadline != null) {
+                    setState(() {
+                      _homeworks.add(Homework(
+                        subject: selectedSubject!,
+                        title: titleController.text,
+                        deadline: deadline!,
+                      ));
+                    });
+                    _saveHomeworks();
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
           ),
-          actions: [
-            TextButton.icon(
-              icon: const Icon(Icons.cancel, color: Colors.grey),
-              label: const Text('取消'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton.icon(
-              icon: Icon(Icons.save, color: colorScheme.primary),
-              label: const Text('儲存'),
-              onPressed: () {
-                if (selectedSubject != null && titleController.text.isNotEmpty && deadline != null) {
-                  setState(() {
-                    _homeworks.add(Homework(
-                      subject: selectedSubject!,
-                      title: titleController.text,
-                      deadline: deadline!,
-                    ));
-                  });
-                  _saveHomeworks();
-                  Navigator.of(context).pop();
-                }
-              },
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
