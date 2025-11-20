@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:image/image.dart' as img;
 
 import 'timetable_importer.dart';
+import 'app_localizations.dart';
 
 // 根據時間取得第幾節
 int getCurrentPeriod() {
@@ -261,12 +262,12 @@ class _LabelEngineState extends State<LabelEngine> {
         builder: (context, setState) => Scaffold(
           appBar: isSelecting
               ? AppBar(
-                  title: Text('已選擇 ${selectedIndexes.length} 張'),
+                  title: Text(AppLocalizations.of(context).tWithNumber('selected_count', selectedIndexes.length)),
                   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.share),
-                      tooltip: '分享',
+                      tooltip: AppLocalizations.of(context).t('share'),
                       onPressed: () async {
                         final files = selectedIndexes
                             .map((i) => XFile(filteredPhotos[i].imagePath))
@@ -318,7 +319,7 @@ class _LabelEngineState extends State<LabelEngine> {
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.calendar_today),
-                      tooltip: '選擇日期',
+                      tooltip: AppLocalizations.of(context).t('select_date'),
                       onPressed: () => showCalendar(context, setState),
                     ),
                     if (selectedDate != null)
@@ -429,7 +430,7 @@ class _LabelEngineState extends State<LabelEngine> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             title: const Text('選擇課程', style: TextStyle(fontWeight: FontWeight.bold)),
             content: DropdownButtonFormField<String>(
-              value: tempSubject,
+              initialValue: tempSubject,
               isExpanded: true,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
@@ -443,7 +444,7 @@ class _LabelEngineState extends State<LabelEngine> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: const Text('取消'),
+                child: Text(AppLocalizations.of(context).t('cancel')),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -463,7 +464,7 @@ class _LabelEngineState extends State<LabelEngine> {
                     Navigator.pop(context);
                   }
                 },
-                child: const Text('確定'),
+                child: Text(AppLocalizations.of(context).t('confirm')),
               ),
             ],
           );
@@ -489,9 +490,9 @@ class _LabelEngineState extends State<LabelEngine> {
     });
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('垃圾桶')),
+        appBar: AppBar(title: Text(AppLocalizations.of(context).t('trash'))),
         body: trashPhotos.isEmpty
-          ? const Center(child: Text('垃圾桶是空的'))
+          ? Center(child: Text(AppLocalizations.of(context).t('trash_empty')))
           : ListView.builder(
               itemCount: trashPhotos.length,
               itemBuilder: (context, index) {
@@ -499,13 +500,13 @@ class _LabelEngineState extends State<LabelEngine> {
                 return ListTile(
                   leading: Image.file(File(note.imagePath), width: 48, height: 48, fit: BoxFit.cover),
                   title: Text(note.subject),
-                  subtitle: Text('刪除於：${note.deletedAt!.toLocal().toString().split(' ')[0]}'),
+                  subtitle: Text('${AppLocalizations.of(context).t('deleted_on')}${note.deletedAt!.toLocal().toString().split(' ')[0]}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.restore),
-                        tooltip: '復原',
+                        tooltip: AppLocalizations.of(context).t('restore'),
                         onPressed: () async {
                           setState(() {
                             final idx = _photos.indexOf(note);
@@ -525,7 +526,7 @@ class _LabelEngineState extends State<LabelEngine> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_forever),
-                        tooltip: '永久刪除',
+                        tooltip: AppLocalizations.of(context).t('delete_forever'),
                         onPressed: () async {
                           File(note.imagePath).delete();
                           setState(() {
@@ -549,15 +550,15 @@ class _LabelEngineState extends State<LabelEngine> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          '照片筆記',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).t('photo_notes'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: '垃圾桶',
+            tooltip: AppLocalizations.of(context).t('trash'),
             onPressed: () => _openTrash(),
           ),
         ],
@@ -573,7 +574,7 @@ class _LabelEngineState extends State<LabelEngine> {
               color: colorScheme.surfaceContainerHighest,
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: '搜尋課程',
+                  hintText: AppLocalizations.of(context).t('search_courses'),
                   prefixIcon: Icon(Icons.search, color: colorScheme.primary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -634,7 +635,7 @@ class _LabelEngineState extends State<LabelEngine> {
             heroTag: 'attach',
             onPressed: pickFileAndChooseSubject,
             backgroundColor: colorScheme.secondary,
-            tooltip: '從檔案加入',
+            tooltip: AppLocalizations.of(context).t('from_file'),
             child: const Icon(Icons.attach_file, color: Colors.white),
           ),
           const SizedBox(height: 16),
@@ -642,7 +643,7 @@ class _LabelEngineState extends State<LabelEngine> {
             heroTag: 'camera',
             onPressed: pickImage,
             backgroundColor: colorScheme.primary,
-            tooltip: '拍照',
+            tooltip: AppLocalizations.of(context).t('camera'),
             child: const Icon(Icons.camera_alt, color: Colors.white),
           ),
         ],

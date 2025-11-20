@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'main.dart'; // 匯入 themeModeNotifier
+import 'main.dart'; // 匯入 themeModeNotifier, localeNotifier
+import 'app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -78,17 +79,17 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           ListTile(
             leading: const Icon(Icons.brightness_auto),
-            title: const Text('跟隨系統'),
+            title: Text(AppLocalizations.of(context).t('system')),
             onTap: () => Navigator.pop(context, ThemeMode.system),
           ),
           ListTile(
             leading: const Icon(Icons.light_mode),
-            title: const Text('亮色'),
+            title: Text('Light'),
             onTap: () => Navigator.pop(context, ThemeMode.light),
           ),
           ListTile(
             leading: const Icon(Icons.dark_mode),
-            title: const Text('暗色'),
+            title: Text('Dark'),
             onTap: () => Navigator.pop(context, ThemeMode.dark),
           ),
         ],
@@ -96,6 +97,49 @@ class _SettingsPageState extends State<SettingsPage> {
     );
     if (mode != null && mode != _themeMode) {
       themeModeNotifier.value = mode;
+      setState(() {});
+    }
+  }
+
+  // 切換語言
+  void _chooseLanguage() async {
+    final choice = await showModalBottomSheet<String?>(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(AppLocalizations.of(context).t('system')),
+            onTap: () => Navigator.pop(context, ''),
+          ),
+          ListTile(
+            leading: const Icon(Icons.flag),
+            title: Text(AppLocalizations.of(context).t('lang_zh')),
+            onTap: () => Navigator.pop(context, 'zh'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.flag),
+            title: Text(AppLocalizations.of(context).t('lang_en')),
+            onTap: () => Navigator.pop(context, 'en'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.flag),
+            title: Text(AppLocalizations.of(context).t('lang_ja')),
+            onTap: () => Navigator.pop(context, 'ja'),
+          ),
+        ],
+      ),
+    );
+    if (choice != null) {
+      final prefs = await SharedPreferences.getInstance();
+      if (choice.isEmpty) {
+        await prefs.remove('locale');
+        localeNotifier.value = null;
+      } else {
+        await prefs.setString('locale', choice);
+        localeNotifier.value = Locale(choice);
+      }
       setState(() {});
     }
   }
@@ -178,7 +222,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('設定', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context).t('settings'), style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: colorScheme.surface,
         elevation: 0,
       ),
@@ -186,15 +230,24 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           ListTile(
             leading: const Icon(Icons.brightness_6),
-            title: const Text('主題模式'),
+            title: Text(AppLocalizations.of(context).t('theme_mode') ?? '主題模式'),
             subtitle: Text(_themeLabel),
             onTap: _chooseTheme,
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(AppLocalizations.of(context).t('language')),
+            subtitle: Text(localeNotifier.value == null
+                ? AppLocalizations.of(context).t('system')
+                : (AppLocalizations.of(context).t('lang_${localeNotifier.value!.languageCode}') ?? localeNotifier.value!.languageCode)),
+            onTap: _chooseLanguage,
+          ),
+          const Divider(),
+          ListTile(
             leading: Icon(Icons.palette, color: _selectedColor),
-            title: const Text('主題顏色'),
-            subtitle: Text(_colorNames[_selectedColor] ?? '自訂顏色'),
+            title: Text(AppLocalizations.of(context).t('theme_color') ?? '主題顏色'),
+            subtitle: Text(_colorNames[_selectedColor] ?? AppLocalizations.of(context).t('custom_color') ?? '自訂顏色'),
             trailing: Container(
               width: 28,
               height: 28,
@@ -209,7 +262,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('關於'),
+            title: Text(AppLocalizations.of(context).t('about') ?? '關於'),
             subtitle: const Text('Study App v1.0.12'),
             onTap: () {
               _aboutTapCount++;

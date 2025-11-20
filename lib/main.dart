@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'timetable_importer.dart';
 import 'label_engine.dart';
 import 'dart:async';
@@ -6,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'settings_page.dart';
 import 'homework.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'app_localizations.dart';
 
 class TimetableData {
   static final TimetableData _instance = TimetableData._internal();
@@ -31,15 +34,31 @@ class TimetableData {
 ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.system);
 ValueNotifier<Color> seedColorNotifier = ValueNotifier(Colors.blue);
 
-void main() {
+// 新增：全域 locale notifier（null = 跟隨系統）
+ValueNotifier<Locale?> localeNotifier = ValueNotifier<Locale?>(null);
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final localeCode = prefs.getString('locale'); // null or '' 表示跟隨系統
+  if (localeCode != null && localeCode.isNotEmpty) {
+    localeNotifier.value = Locale(localeCode);
+  } else {
+    localeNotifier.value = null;
+  }
+
   runApp(
-    ValueListenableBuilder<Color>(
-      valueListenable: seedColorNotifier,
-      builder: (context, seedColor, _) {
-        return ValueListenableBuilder<ThemeMode>(
-          valueListenable: themeModeNotifier,
-          builder: (context, mode, _) => MyApp(themeMode: mode, seedColor: seedColor),
+    ValueListenableBuilder<Locale?>(
+      valueListenable: localeNotifier,
+      builder: (context, locale, _) {
+        return ValueListenableBuilder<Color>(
+          valueListenable: seedColorNotifier,
+          builder: (context, seedColor, _) {
+            return ValueListenableBuilder<ThemeMode>(
+              valueListenable: themeModeNotifier,
+              builder: (context, mode, _) => MyApp(themeMode: mode, seedColor: seedColor, locale: locale),
+            );
+          },
         );
       },
     ),
@@ -49,21 +68,43 @@ void main() {
 class MyApp extends StatelessWidget {
   final ThemeMode themeMode;
   final Color seedColor;
-  const MyApp({super.key, required this.themeMode, required this.seedColor});
+  final Locale? locale;
+  const MyApp({super.key, required this.themeMode, required this.seedColor, this.locale});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Study App',
       debugShowCheckedModeBanner: false,
+      locale: locale, // null = follow system
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('zh'),
+        Locale('en'),
+        Locale('ja'),
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale == null) return supportedLocales.first;
+        for (var supported in supportedLocales) {
+          if (supported.languageCode == locale.languageCode) return supported;
+        }
+        return supportedLocales.first;
+      },
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.light),
+        colorScheme:
+            ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.light),
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.dark),
+        colorScheme:
+            ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.dark),
         brightness: Brightness.dark,
       ),
       themeMode: themeMode,
@@ -104,12 +145,22 @@ class _MainPageState extends State<MainPage> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '首頁'),
-          BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: '課表'),
-          BottomNavigationBarItem(icon: Icon(Icons.label), label: '照片筆記'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: '功課'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '設定'),
+        items: [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: AppLocalizations.of(context).t('home')),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.table_chart),
+              label: AppLocalizations.of(context).t('timetable')),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.label),
+              label: AppLocalizations.of(context).t('photo_notes')),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.assignment),
+              label: AppLocalizations.of(context).t('homework')),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: AppLocalizations.of(context).t('settings')),
         ],
       ),
     );
@@ -185,18 +236,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final today = DateTime(now.year, now.month, now.day);
     final target = DateTime(d.year, d.month, d.day);
     final days = target.difference(today).inDays;
-    if (days == 0) return '今天';
-    if (days == 1) return '明天';
-    return '還有 ${days} 天';
+    final loc = AppLocalizations.of(context);
+    if (days == 0) return loc.t('today');
+    if (days == 1) return loc.t('tomorrow');
+    return loc.tWithNumber('days_remaining', days);
   }
 
   String getCurrentClass() {
     int period = getCurrentPeriod();
     int weekday = _now.weekday;
-    if (weekday < 1 || weekday > 5) return "今天不是上課日";
-    if (period == 0) return "目前非上課時間";
+    final loc = AppLocalizations.of(context);
+    if (weekday < 1 || weekday > 5) return loc.t('not_class_day');
+    if (period == 0) return loc.t('not_class_time');
     String subject = TimetableData().table[weekday - 1][period - 1];
-    if (subject.isEmpty) return "未排課(第$period節)";
+    if (subject.isEmpty) return '${loc.t('no_scheduled')} (第$period節)';
     return "$subject (第$period節)";
   }
 
@@ -205,23 +258,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final now = DateTime.now();
       final weekday = now.weekday;
       final timetable = TimetableData();
-      
-      if (weekday < 1 || weekday > 5) return '今天非上課日';
+      final loc = AppLocalizations.of(context);
+
+      if (weekday < 1 || weekday > 5) return loc.t('not_class_day');
 
       final currentPeriod = getCurrentPeriod();
       final nextPeriod = currentPeriod + 1;
-      
-      if (nextPeriod < 1 || nextPeriod > timetable.periods) return '今天已無課程';
+
+      if (nextPeriod < 1 || nextPeriod > timetable.periods) return loc.t('today_no_more_classes');
 
       if (timetable.table.isEmpty || timetable.table[weekday - 1].isEmpty) {
-        return '未排課 (第$nextPeriod節)';
+        return '${loc.t('no_scheduled')} (第$nextPeriod節)';
       }
 
       final subject = timetable.table[weekday - 1][nextPeriod - 1];
-      return subject.isEmpty ? '未排課 (第$nextPeriod節)' : subject;
+      return subject.isEmpty ? '${loc.t('no_scheduled')} (第$nextPeriod節)' : subject;
     } catch (e) {
       print('getNextClass 錯誤: $e');
-      return '未排課';
+      return AppLocalizations.of(context).t('no_scheduled');
     }
   }
 
@@ -242,7 +296,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 Icon(Icons.school, color: colorScheme.primary, size: 32),
                 const SizedBox(width: 8),
                 Text(
-                  '歡迎回來！',
+                  AppLocalizations.of(context).t('welcome_back'),
                   style: TextStyle(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -260,7 +314,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 children: [
                   const SizedBox(height: 24),
                   Text(
-                    "接下來 7 天要交的功課",
+                    AppLocalizations.of(context).t('upcoming_homeworks'),
                     style: TextStyle(
                       fontSize: 20,
                       color: colorScheme.primary,
@@ -272,7 +326,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   Card(
                     elevation: 1,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    color: colorScheme.surfaceVariant,
+                    color: colorScheme.surfaceContainerHighest,
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: SizedBox(
@@ -280,7 +334,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         child: _upcomingHomeworks.isEmpty
                             ? Center(
                                 child: Text(
-                                  '未來 7 天內沒有功課',
+                                  AppLocalizations.of(context).t('no_homeworks'),
                                   style: TextStyle(color: colorScheme.onSurfaceVariant),
                                 ),
                               )
@@ -338,7 +392,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    "課程資訊",
+                    AppLocalizations.of(context).t('course_info'),
                     style: TextStyle(
                       fontSize: 20,
                       color: colorScheme.secondary,
@@ -365,7 +419,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '目前課程',
+                                      AppLocalizations.of(context).t('current_course'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: colorScheme.onSecondaryContainer.withOpacity(0.7),
@@ -397,7 +451,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '下節課程',
+                                      AppLocalizations.of(context).t('next_course'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: colorScheme.onSecondaryContainer.withOpacity(0.7),

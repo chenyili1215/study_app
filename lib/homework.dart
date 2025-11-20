@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'timetable_importer.dart';
+import 'app_localizations.dart';
 
 class Homework {
   final String subject;
@@ -54,7 +55,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
   }
 
   void _showAddHomeworkDialog() {
-    final colorScheme = Theme.of(context).colorScheme; // 新增這行
+    final colorScheme = Theme.of(context).colorScheme;
     final titleController = TextEditingController();
     DateTime? deadline;
     String? selectedSubject;
@@ -69,7 +70,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
               children: [
                 Icon(Icons.assignment, color: colorScheme.primary),
                 const SizedBox(width: 8),
-                Text('新增功課', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+                Text(AppLocalizations.of(context).t('add_homework'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
               ],
             ),
             content: SingleChildScrollView(
@@ -77,7 +78,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    hint: const Text('選擇科目'),
+                    hint: Text(AppLocalizations.of(context).t('choose_subject')),
                     decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: TimetableData().table.expand((e) => e).toSet().where((s) => s.isNotEmpty).map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => selectedSubject = v,
@@ -85,9 +86,9 @@ class _HomeworkPageState extends State<HomeworkPage> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(
-                      hintText: '功課標題',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context).t('homework_title'),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -106,7 +107,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(border: Border.all()),
-                      child: Text(deadline == null ? '選擇截止日期' : '${deadline!.year}-${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}'),
+                      child: Text(deadline == null ? AppLocalizations.of(context).t('select_deadline') : '${deadline!.year}-${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}'),
                     ),
                   ),
                 ],
@@ -115,11 +116,11 @@ class _HomeworkPageState extends State<HomeworkPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('取消'),
+                child: Text(AppLocalizations.of(context).t('cancel')),
               ),
               TextButton.icon(
                 icon: Icon(Icons.save, color: colorScheme.primary),
-                label: const Text('儲存'),
+                label: Text(AppLocalizations.of(context).t('save')),
                 onPressed: () {
                   if (selectedSubject != null && titleController.text.isNotEmpty && deadline != null) {
                     setState(() {
@@ -146,7 +147,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('功課記錄', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context).t('homework_record'), style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
       ),
       body: ListView.separated(
@@ -162,7 +163,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
             child: ListTile(
               leading: Icon(Icons.assignment, color: colorScheme.primary),
               title: Text(hw.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${hw.subject}  截止：${hw.deadline.year}-${hw.deadline.month.toString().padLeft(2, '0')}-${hw.deadline.day.toString().padLeft(2, '0')}'),
+              subtitle: Text('${hw.subject}  ${AppLocalizations.of(context).t('deadline_prefix')}${hw.deadline.year}-${hw.deadline.month.toString().padLeft(2, '0')}-${hw.deadline.day.toString().padLeft(2, '0')}'),
               trailing: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.redAccent),
                 onPressed: () async {
