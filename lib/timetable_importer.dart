@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'app_localizations.dart';
 import 'dart:convert';
 
 // 全域課表單例
@@ -81,22 +82,22 @@ class _TimetableImporterState extends State<TimetableImporter> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('設定每天節數', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context).t('set_periods_title'), style: const TextStyle(fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: '每天幾節課',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context).t('enter_periods_label'),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context).t('cancel')),
             onPressed: () => Navigator.of(context).pop(),
           ),
           TextButton(
-            child: const Text('確定'),
+            child: Text(AppLocalizations.of(context).t('save')),
             onPressed: () {
               final val = int.tryParse(controller.text);
               if (val != null && val > 0 && val <= 12) {
@@ -134,7 +135,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    hintText: '請輸入課表名稱',
+                    hintText: AppLocalizations.of(context).t('enter_timetable_name'),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   ),
@@ -150,7 +151,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
         actions: [
           IconButton(
             icon: Icon(isEditing ? Icons.close : Icons.edit),
-            tooltip: isEditing ? '取消編輯' : '編輯課表',
+            tooltip: isEditing ? AppLocalizations.of(context).t('cancel') : AppLocalizations.of(context).t('edit_periods'),
             onPressed: () {
               setState(() {
                 _isEditing = !isEditing;
@@ -193,197 +194,194 @@ class _TimetableImporterState extends State<TimetableImporter> {
                     ),
                     const Divider(height: 24),
                     // 課表表格
-                    ...List.generate(timetable.periods, (period) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 60,
-                            child: Text(
-                              '第${period + 1}節',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.secondary,
+                    ...List.generate(
+                      timetable.periods,
+                      (period) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 60,
+                              child: Text(
+                                '第${period + 1}節',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.secondary,
+                                ),
                               ),
                             ),
-                          ),
-                          ...List.generate(5, (day) => Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: GestureDetector(
-                                  onLongPress: () async {
-                                    final subjectController = TextEditingController(text: timetable.table[day][period]);
-                                    final locationController = TextEditingController(text: timetable.locations[day][period]);
-                                    final teacherController = TextEditingController(text: timetable.teachers[day][period]);
-                                    await showGeneralDialog(
-                                      context: context,
-                                      barrierDismissible: true,
-                                      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-                                      transitionDuration: const Duration(milliseconds: 320),
-                                      pageBuilder: (context, animation, secondaryAnimation) {
-                                        return Center(
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: AlertDialog(
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                              title: Row(
-                                                children: const [
-                                                  Icon(Icons.edit, color: Colors.blueAccent),
-                                                  SizedBox(width: 8),
-                                                  Text('詳細設定', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-                                                ],
-                                              ),
-                                              content: SingleChildScrollView(
-                                                child: Column(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    TextField(
-                                                      controller: subjectController,
-                                                      decoration: InputDecoration(
-                                                        labelText: '課程名稱',
-                                                        prefixIcon: const Icon(Icons.book),
-                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                                        filled: true,
-                                                        fillColor: Colors.blue.shade50,
-                                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                      ),
+                            ...List.generate(
+                              5,
+                              (day) => Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                  child: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: GestureDetector(
+                                      onLongPress: () async {
+                                        final subjectController = TextEditingController(text: timetable.table[day][period]);
+                                        final locationController = TextEditingController(text: timetable.locations[day][period]);
+                                        final teacherController = TextEditingController(text: timetable.teachers[day][period]);
+                                        await showGeneralDialog(
+                                          context: context,
+                                          barrierDismissible: true,
+                                          barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+                                          transitionDuration: const Duration(milliseconds: 320),
+                                          pageBuilder: (context, animation, secondaryAnimation) {
+                                            return Center(
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: AlertDialog(
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                                  title: Row(
+                                                    children: [
+                                                      const Icon(Icons.edit, color: Colors.blueAccent),
+                                                      const SizedBox(width: 8),
+                                                      Text(AppLocalizations.of(context).t('details'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+                                                    ],
+                                                  ),
+                                                  content: SingleChildScrollView(
+                                                    child: Column(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        TextField(
+                                                          controller: subjectController,
+                                                          decoration: InputDecoration(
+                                                            labelText: AppLocalizations.of(context).t('subject_label'),
+                                                            prefixIcon: const Icon(Icons.book),
+                                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                                            filled: true,
+                                                            fillColor: Colors.blue.shade50,
+                                                            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 16),
+                                                        TextField(
+                                                          controller: locationController,
+                                                          decoration: InputDecoration(
+                                                            labelText: AppLocalizations.of(context).t('location_label'),
+                                                            prefixIcon: const Icon(Icons.location_on),
+                                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                                            filled: true,
+                                                            fillColor: Colors.green.shade50,
+                                                            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 16),
+                                                        TextField(
+                                                          controller: teacherController,
+                                                          decoration: InputDecoration(
+                                                            labelText: AppLocalizations.of(context).t('teacher_label'),
+                                                            prefixIcon: const Icon(Icons.person),
+                                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                                            filled: true,
+                                                            fillColor: Colors.orange.shade50,
+                                                            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                    const SizedBox(height: 16),
-                                                    TextField(
-                                                      controller: locationController,
-                                                      decoration: InputDecoration(
-                                                        labelText: '上課地點',
-                                                        prefixIcon: const Icon(Icons.location_on),
-                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                                        filled: true,
-                                                        fillColor: Colors.green.shade50,
-                                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                      ),
+                                                  ),
+                                                  actions: [
+                                                    TextButton.icon(
+                                                      icon: const Icon(Icons.save, color: Colors.blueAccent),
+                                                      label: Text(AppLocalizations.of(context).t('save'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                      onPressed: () {
+                                                        final subject = subjectController.text;
+                                                        final location = locationController.text;
+                                                        final teacher = teacherController.text;
+
+                                                        // 先儲存目前格
+                                                        timetable.table[day][period] = subject;
+                                                        timetable.locations[day][period] = location;
+                                                        timetable.teachers[day][period] = teacher;
+
+                                                        // 新增：同步所有同課程名稱的格子
+                                                        for (int d = 0; d < 5; d++) {
+                                                          for (int p = 0; p < timetable.periods; p++) {
+                                                            if (timetable.table[d][p] == subject && subject.isNotEmpty) {
+                                                              timetable.locations[d][p] = location;
+                                                              timetable.teachers[d][p] = teacher;
+                                                            }
+                                                          }
+                                                        }
+
+                                                        timetable.save();
+                                                        Navigator.of(context).pop();
+                                                        setState(() {});
+                                                      },
                                                     ),
-                                                    const SizedBox(height: 16),
-                                                    TextField(
-                                                      controller: teacherController,
-                                                      decoration: InputDecoration(
-                                                        labelText: '老師名字',
-                                                        prefixIcon: const Icon(Icons.person),
-                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                                        filled: true,
-                                                        fillColor: Colors.orange.shade50,
-                                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                      ),
+                                                    TextButton.icon(
+                                                      icon: const Icon(Icons.cancel, color: Colors.grey),
+                                                      label: Text(AppLocalizations.of(context).t('cancel')),
+                                                      onPressed: () => Navigator.of(context).pop(),
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                              actions: [
-                                                TextButton.icon(
-                                                  icon: const Icon(Icons.save, color: Colors.blueAccent),
-                                                  label: const Text('儲存', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  onPressed: () {
-                                                    final subject = subjectController.text;
-                                                    final location = locationController.text;
-                                                    final teacher = teacherController.text;
-
-                                                    // 先儲存目前格
-                                                    timetable.table[day][period] = subject;
-                                                    timetable.locations[day][period] = location;
-                                                    timetable.teachers[day][period] = teacher;
-
-                                                    // 新增：同步所有同課程名稱的格子
-                                                    for (int d = 0; d < 5; d++) {
-                                                      for (int p = 0; p < timetable.periods; p++) {
-                                                        if (timetable.table[d][p] == subject && subject.isNotEmpty) {
-                                                          timetable.locations[d][p] = location;
-                                                          timetable.teachers[d][p] = teacher;
-                                                        }
-                                                      }
-                                                    }
-
-                                                    timetable.save();
-                                                    Navigator.of(context).pop();
-                                                    setState(() {});
+                                            );
+                                          },
+                                        );
+                                      },
+                                      child: Material(
+                                        elevation: 1,
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: colorScheme.surface,
+                                        child: isEditing
+                                            ? Center(
+                                                child: TextFormField(
+                                                  initialValue: timetable.table[day][period],
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                  style: const TextStyle(fontSize: 16),
+                                                  decoration: InputDecoration(
+                                                    isDense: true,
+                                                    border: OutlineInputBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      borderSide: BorderSide.none,
+                                                    ),
+                                                    filled: true,
+                                                    fillColor: colorScheme.surface,
+                                                    contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                                  ),
+                                                  onChanged: (v) {
+                                                    timetable.table[day][period] = v.replaceAll("'", "");
                                                   },
                                                 ),
-                                                TextButton.icon(
-                                                  icon: const Icon(Icons.cancel, color: Colors.grey),
-                                                  label: const Text('取消'),
-                                                  onPressed: () => Navigator.of(context).pop(),
+                                              )
+                                            : Center(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      breakSubject(timetable.table[day][period]),
+                                                      textAlign: TextAlign.center,
+                                                      style: const TextStyle(fontSize: 16),
+                                                      softWrap: true,
+                                                    ),
+                                                    if (timetable.locations[day][period].isNotEmpty)
+                                                      Text(
+                                                        timetable.locations[day][period],
+                                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                      ),
+                                                    if (timetable.teachers[day][period].isNotEmpty)
+                                                      Text(
+                                                        timetable.teachers[day][period],
+                                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                      ),
+                                                  ],
                                                 ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      transitionBuilder: (context, animation, secondaryAnimation, child) {
-                                        return ScaleTransition(
-                                          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
-                                          child: FadeTransition(
-                                            opacity: animation,
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: Material(
-                                    elevation: 1,
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: colorScheme.surface,
-                                    child: isEditing
-                                        ? Center(
-                                            child: TextFormField(
-                                              initialValue: timetable.table[day][period],
-                                              textAlign: TextAlign.center,
-                                              maxLines: 2,
-                                              style: const TextStyle(fontSize: 16),
-                                              decoration: InputDecoration(
-                                                isDense: true,
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide.none,
-                                                ),
-                                                filled: true,
-                                                fillColor: colorScheme.surface,
-                                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                                               ),
-                                              onChanged: (v) {
-                                                timetable.table[day][period] = v.replaceAll("'", "");
-                                              },
-                                            ),
-                                          )
-                                        : Center(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  breakSubject(timetable.table[day][period]),
-                                                  textAlign: TextAlign.center,
-                                                  style: const TextStyle(fontSize: 16),
-                                                  softWrap: true,
-                                                ),
-                                                if (timetable.locations[day][period].isNotEmpty)
-                                                  Text(
-                                                    timetable.locations[day][period],
-                                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                                  ),
-                                                if (timetable.teachers[day][period].isNotEmpty)
-                                                  Text(
-                                                    timetable.teachers[day][period],
-                                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          )),
-                        ],
+                          ],
+                        ),
                       ),
-                    )),
+                    ),
                     if (isEditing)
                       Padding(
                         padding: const EdgeInsets.only(top: 20),
@@ -392,7 +390,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             Expanded(
                               child: ElevatedButton.icon(
                                 icon: const Icon(Icons.save),
-                                label: const Text('儲存課表'),
+                                label: Text(AppLocalizations.of(context).t('save_timetable')),
                                 style: ElevatedButton.styleFrom(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -406,7 +404,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                                     _isEditing = false;
                                   });
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('課表已儲存')),
+                                    SnackBar(content: Text(AppLocalizations.of(context).t('timetable_saved'))),
                                   );
                                 },
                               ),
@@ -415,7 +413,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.settings),
-                                label: const Text('編輯課表節數'),
+                                label: Text(AppLocalizations.of(context).t('edit_periods')),
                                 style: OutlinedButton.styleFrom(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -433,7 +431,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
             ),
             const SizedBox(height: 24),
             Text(
-              '當前課程資訊',
+              AppLocalizations.of(context).t('current_class_info'),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -472,16 +470,16 @@ class _TimetableImporterState extends State<TimetableImporter> {
                           int todayIdx = (today - 1).clamp(0, 4);
 
                           String getSubject(int period) {
-                            if (period < 1 || period > timetable.periods) return '目前非上課時間';
+                            if (period < 1 || period > timetable.periods) return AppLocalizations.of(context).t('not_class_time');
                             final subject = timetable.table[todayIdx][period - 1];
-                            return subject.isEmpty ? '未排課' : subject;
+                            return subject.isEmpty ? AppLocalizations.of(context).t('no_scheduled') : subject;
                           }
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '當節課程',
+                                AppLocalizations.of(context).t('current_class'),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -528,16 +526,16 @@ class _TimetableImporterState extends State<TimetableImporter> {
                           int todayIdx = (today - 1).clamp(0, 4);
 
                           String getSubject(int period) {
-                            if (period < 1 || period > 7) return '無';
+                            if (period < 1 || period > 7) return AppLocalizations.of(context).t('none');
                             final subject = timetable.table[todayIdx][period - 1];
-                            return subject.isEmpty ? '未排課' : subject;
+                            return subject.isEmpty ? AppLocalizations.of(context).t('no_scheduled') : subject;
                           }
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '下節課程',
+                                AppLocalizations.of(context).t('next_class'),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,

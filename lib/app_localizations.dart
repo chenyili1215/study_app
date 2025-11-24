@@ -83,9 +83,9 @@ class AppLocalizations {
       'current_class_info': '當前課程資訊',
       'current_class': '當節課程',
       'next_class': '下節課程',
-      'not_class_time': '目前非上課時間',
-      'no_scheduled': '未排課',
+   
       'none': '無',
+      
     },
     'en': {
       'app_title': 'Study App',
@@ -157,8 +157,6 @@ class AppLocalizations {
       'current_class_info': 'Current class info',
       'current_class': 'Current class',
       'next_class': 'Next class',
-      'not_class_time': 'Not in class time',
-      'no_scheduled': 'No class scheduled',
       'none': 'None',
     },
     'ja': {
@@ -231,8 +229,7 @@ class AppLocalizations {
       'current_class_info': '現在の授業情報',
       'current_class': '当該授業',
       'next_class': '次の授業',
-      'not_class_time': '現在は授業時間ではありません',
-      'no_scheduled': '未登録',
+     
       'none': 'なし',
     },
   };
