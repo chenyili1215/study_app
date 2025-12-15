@@ -181,7 +181,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                           (d) => Expanded(
                             child: Center(
                               child: Text(
-                                '星期${d + 1}',
+                                AppLocalizations.of(context).t('weekday_${d + 1}'),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.primary,
@@ -203,7 +203,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             SizedBox(
                               width: 60,
                               child: Text(
-                                '第${period + 1}節',
+                                AppLocalizations.of(context).tWithNumber('period_format', period + 1),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.secondary,
@@ -466,7 +466,9 @@ class _TimetableImporterState extends State<TimetableImporter> {
                             16 * 60 + 10,
                           ];
                           int currentPeriod = periods.lastIndexWhere((start) => minutes >= start) + 1;
-                          if (currentPeriod > 7) currentPeriod = 0; // 超過最後一節就歸零
+
+                          if (currentPeriod > 7) currentPeriod = 0;
+
                           int todayIdx = (today - 1).clamp(0, 4);
 
                           String getSubject(int period) {

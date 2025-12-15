@@ -46,6 +46,8 @@ class AppLocalizations {
       'choose_subject': '選擇科目',
       'cancel': '取消',
       'confirm': '確定',
+      'no_photos_yet': '尚未新增照片',
+      'take_photo_failed': '拍照失敗',
       'add_image_failed': '加入圖片失敗',
       'from_file': '從檔案加入',
       'camera': '拍照',
@@ -85,7 +87,13 @@ class AppLocalizations {
       'next_class': '下節課程',
    
       'none': '無',
-      
+      // 新增到各語系的 keys（示範三語系都加）
+      'weekday_1': '星期一', // zh
+      'weekday_2': '星期二',
+      'weekday_3': '星期三',
+      'weekday_4': '星期四',
+      'weekday_5': '星期五',
+      'period_format': '第{n}節',
     },
     'en': {
       'app_title': 'Study App',
@@ -158,6 +166,13 @@ class AppLocalizations {
       'current_class': 'Current class',
       'next_class': 'Next class',
       'none': 'None',
+      // 新增到各語系的 keys（示範三語系都加）
+      'weekday_1': 'Mon',
+      'weekday_2': 'Tue',
+      'weekday_3': 'Wed',
+      'weekday_4': 'Thu',
+      'weekday_5': 'Fri',
+      'period_format': 'Period {n}',
     },
     'ja': {
       'app_title': 'Study App',
@@ -231,6 +246,13 @@ class AppLocalizations {
       'next_class': '次の授業',
      
       'none': 'なし',
+      // 新增到各語系的 keys（示範三語系都加）
+      'weekday_1': '月',
+      'weekday_2': '火',
+      'weekday_3': '水',
+      'weekday_4': '木',
+      'weekday_5': '金',
+      'period_format': '{n}時限',
     },
   };
 

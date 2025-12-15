@@ -140,7 +140,7 @@ class _LabelEngineState extends State<LabelEngine> {
     } catch (e, st) {
       print('拍照錯誤: $e\n$st');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('拍照失敗: $e')),
+        SnackBar(content: Text('${AppLocalizations.of(context).t('take_photo_failed')}: $e')),
       );
     }
   }
@@ -273,7 +273,7 @@ class _LabelEngineState extends State<LabelEngine> {
                             .map((i) => XFile(filteredPhotos[i].imagePath))
                             .toList();
                         if (files.isNotEmpty) {
-                          await Share.shareXFiles(files, text: '分享我的課堂照片');
+                          await Share.shareXFiles(files, text: AppLocalizations.of(context).t('share_my_class_photos'));
                         }
                       },
                     ),
@@ -325,7 +325,7 @@ class _LabelEngineState extends State<LabelEngine> {
                     if (selectedDate != null)
                       IconButton(
                         icon: const Icon(Icons.clear),
-                        tooltip: '清除日期篩選',
+                        tooltip: AppLocalizations.of(context).t('clear_date_filter'),
                         onPressed: () {
                           setState(() {
                             selectedDate = null;
@@ -428,7 +428,7 @@ class _LabelEngineState extends State<LabelEngine> {
           String? tempSubject = selectedSubject;
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: const Text('選擇課程', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(AppLocalizations.of(context).t('choose_subject'), style: const TextStyle(fontWeight: FontWeight.bold)),
             content: DropdownButtonFormField<String>(
               initialValue: tempSubject,
               isExpanded: true,
@@ -472,7 +472,7 @@ class _LabelEngineState extends State<LabelEngine> {
       );
     } catch (e, st) {
       print('從相簿加入錯誤: $e\n$st');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('加入圖片失敗: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context).t('add_image_failed')}: $e')));
     }
   }
 
@@ -592,7 +592,7 @@ class _LabelEngineState extends State<LabelEngine> {
                     Padding(
                       padding: const EdgeInsets.only(top: 80),
                       child: Text(
-                        '尚未新增照片',
+                        AppLocalizations.of(context).t('no_photos_yet'),
                         style: TextStyle(
                           fontSize: 20,
                           color: colorScheme.outline,
