@@ -1,16 +1,65 @@
-# study_app
+# Study App
 
-A new Flutter project.
+Study App 是一款以學生實際使用情境為出發點所開發的學習輔助應用程式，整合課表、作業管理與照片筆記等功能，目標是讓使用者可以在同一個地方掌握每日課程安排與待辦事項。
 
-## Getting Started
+首頁會即時顯示目前課程、下一節課，以及近期即將到期的作業，減少來回切換多個 App 的需求。
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 功能
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 首頁
+- 顯示目前正在上的課程
+- 顯示下一節課
+- 顯示 7 天內即將到期的作業
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 課表
+- 以星期與節次管理課程
+- 支援編輯與匯入
+- 使用本機儲存，不需網路即可使用
+
+### 照片筆記
+- 以標籤方式整理上課拍攝的照片
+- 方便回顧與分類
+
+### 作業管理
+- 新增、編輯、刪除作業
+- 依期限排序
+- 近期作業會顯示在首頁
+
+### 設定
+- 深色模式 / 淺色模式 / 跟隨系統
+- 主題色自訂
+- 語言切換（中文 / 英文 / 日文）
+
+---
+
+## 使用技術
+
+- Flutter
+- Dart
+- Material 3
+- SharedPreferences（本機資料儲存）
+- Flutter 多語系機制
+
+---
+
+## 專案結構概念
+
+底部導覽列包含以下頁面：
+- 首頁（Home）
+- 課表（Timetable）
+- 照片筆記（Label Engine）
+- 作業管理（Homework）
+- 設定（Settings）
+
+資料皆以本機方式儲存，包含課表、作業與使用者偏好設定。
+
+---
+
+## 安裝與執行
+
+1. 下載專案
+```bash
+git clone https://github.com/chenyili1215/study_app.git
+cd study_app
