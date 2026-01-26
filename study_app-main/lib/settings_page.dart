@@ -13,6 +13,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   ThemeMode get _themeMode => themeModeNotifier.value;
   int _aboutTapCount = 0;
+  bool _easterEggShown = false;
 
   // 新增主色管理
   final List<Color> _seedColors = [
@@ -31,20 +32,20 @@ class _SettingsPageState extends State<SettingsPage> {
   ];
   Color _selectedColor = Colors.blue;
 
-  // 新增：顏色名稱對照表
-  final Map<Color, String> _colorNames = {
-    Colors.blue: '藍色',
-    Colors.green: '綠色',
-    Colors.purple: '紫色',
-    Colors.orange: '橙色',
-    Colors.red: '紅色',
-    Colors.teal: '藍綠',
-    Colors.pink: '粉紅',
-    Colors.brown: '咖啡',
-    Colors.indigo: '靛藍',
-    Colors.cyan: '青色',
-    Colors.amber: '琥珀',
-    Colors.deepOrange: '深橙',
+  // 顏色對應的 i18n key
+  static final Map<Color, String> _colorKeys = {
+    Colors.blue: 'color_blue',
+    Colors.green: 'color_green',
+    Colors.purple: 'color_purple',
+    Colors.orange: 'color_orange',
+    Colors.red: 'color_red',
+    Colors.teal: 'color_teal',
+    Colors.pink: 'color_pink',
+    Colors.brown: 'color_brown',
+    Colors.indigo: 'color_indigo',
+    Colors.cyan: 'color_cyan',
+    Colors.amber: 'color_amber',
+    Colors.deepOrange: 'color_deep_orange',
   };
 
   @override
@@ -84,12 +85,12 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           ListTile(
             leading: const Icon(Icons.light_mode),
-            title: Text('Light'),
+            title: Text(AppLocalizations.of(context).t('theme_light')),
             onTap: () => Navigator.pop(context, ThemeMode.light),
           ),
           ListTile(
             leading: const Icon(Icons.dark_mode),
-            title: Text('Dark'),
+            title: Text(AppLocalizations.of(context).t('theme_dark')),
             onTap: () => Navigator.pop(context, ThemeMode.dark),
           ),
         ],
@@ -144,27 +145,36 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  String get _themeLabel {
+  String _themeLabel(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     switch (_themeMode) {
       case ThemeMode.light:
-        return '亮色';
+        return loc.t('theme_light');
       case ThemeMode.dark:
-        return '暗色';
+        return loc.t('theme_dark');
       default:
-        return '跟隨系統';
+        return loc.t('theme_follow_system');
     }
   }
 
   void _showEasterEgg() {
+    _easterEggShown = true;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('🎉 小彩蛋！', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('你發現了隱藏彩蛋！\n\n真是個聰明的學習者 😄'),
+        title: Text(
+          AppLocalizations.of(context).t('easter_egg_title'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(AppLocalizations.of(context).t('easter_egg_content')),
         actions: [
           TextButton(
-            child: const Text('關閉'),
-            onPressed: () => Navigator.of(context).pop(),
+            child: Text(AppLocalizations.of(context).t('close')),
+            onPressed: () {
+              _easterEggShown = false;
+              _aboutTapCount = 0;
+              Navigator.of(context).pop();
+            },
           ),
         ],
       ),
@@ -175,7 +185,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final picked = await showDialog<Color>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('選擇主題顏色'),
+        title: Text(AppLocalizations.of(context).t('choose_theme_color')),
         content: SizedBox(
           width: double.maxFinite,
           child: GridView.count(
@@ -208,7 +218,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         actions: [
           TextButton(
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context).t('cancel')),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -236,7 +246,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ListTile(
             leading: const Icon(Icons.brightness_6),
             title: Text(AppLocalizations.of(context).t('theme_mode')),
-            subtitle: Text(_themeLabel),
+            subtitle: Text(_themeLabel(context)),
             onTap: _chooseTheme,
           ),
           const Divider(),
@@ -246,10 +256,9 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: Text(
               localeNotifier.value == null
                   ? AppLocalizations.of(context).t('system')
-                  : (AppLocalizations.of(
-                          context,
-                        ).t('lang_${localeNotifier.value!.languageCode}') ??
-                        localeNotifier.value!.languageCode),
+                  : AppLocalizations.of(context).t(
+                      'lang_${localeNotifier.value!.languageCode}',
+                    ),
             ),
             onTap: _chooseLanguage,
           ),
@@ -258,8 +267,9 @@ class _SettingsPageState extends State<SettingsPage> {
             leading: Icon(Icons.palette, color: _selectedColor),
             title: Text(AppLocalizations.of(context).t('theme_color')),
             subtitle: Text(
-              _colorNames[_selectedColor] ??
-                  AppLocalizations.of(context).t('custom_color'),
+              _colorKeys.containsKey(_selectedColor)
+                  ? AppLocalizations.of(context).t(_colorKeys[_selectedColor]!)
+                  : AppLocalizations.of(context).t('custom_color'),
             ),
             trailing: Container(
               width: 28,
@@ -278,10 +288,11 @@ class _SettingsPageState extends State<SettingsPage> {
             title: Text(AppLocalizations.of(context).t('about')),
             subtitle: const Text('Study App v1.0.12'),
             onTap: () {
-              _aboutTapCount++;
-              if (_aboutTapCount >= 5) {
-                _aboutTapCount = 0;
-                _showEasterEgg();
+              if (!_easterEggShown) {
+                _aboutTapCount++;
+                if (_aboutTapCount >= 5) {
+                  _showEasterEgg();
+                }
               }
             },
           ),

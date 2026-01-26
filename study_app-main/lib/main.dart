@@ -12,30 +12,6 @@ import 'app_localizations.dart';
 import 'notification_service.dart';
 import 'dart:developer' as dev;
 
-class TimetableData {
-  static final TimetableData _instance = TimetableData._internal();
-  factory TimetableData() => _instance;
-  TimetableData._internal();
-
-  List<List<String>> table = List.generate(
-    5,
-    (_) => List.generate(7, (_) => ''),
-  );
-
-  int get periods => 7;
-
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString('timetable');
-    if (data != null && data.isNotEmpty) {
-      final decoded = jsonDecode(data);
-      table = List<List<String>>.from(
-        decoded.map((row) => List<String>.from(row)),
-      );
-    }
-  }
-}
-
 ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.system);
 ValueNotifier<Color> seedColorNotifier = ValueNotifier(Colors.blue);
 
@@ -225,7 +201,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     TimetableData().load().then((_) => setState(() {}));
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(const Duration(seconds: 60), (_) {
       setState(() {
         _now = DateTime.now();
       });
@@ -295,8 +271,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (weekday < 1 || weekday > 5) return loc.t('not_class_day');
     if (period == 0) return loc.t('not_class_time');
     String subject = TimetableData().table[weekday - 1][period - 1];
-    if (subject.isEmpty) return '${loc.t('no_scheduled')} (第$period節)';
-    return "$subject (第$period節)";
+    if (subject.isEmpty) return '${loc.t('no_scheduled')} (${loc.tWithNumber('period_label', period)})';
+    return "$subject (${loc.tWithNumber('period_label', period)})";
   }
 
   String getNextClass() {
@@ -315,12 +291,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return loc.t('today_no_more_classes');
       }
       if (timetable.table.isEmpty || timetable.table[weekday - 1].isEmpty) {
-        return '${loc.t('no_scheduled')} (第$nextPeriod節)';
+        return '${loc.t('no_scheduled')} (${loc.tWithNumber('period_label', nextPeriod)})';
       }
 
       final subject = timetable.table[weekday - 1][nextPeriod - 1];
       return subject.isEmpty
-          ? '${loc.t('no_scheduled')} (第$nextPeriod節)'
+          ? '${loc.t('no_scheduled')} (${loc.tWithNumber('period_label', nextPeriod)})'
           : subject;
     } catch (e) {
       dev.log('getNextClass 錯誤: $e');
@@ -580,16 +556,3 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 }
 
-int getCurrentPeriod() {
-  final now = TimeOfDay.now();
-  final minutes = now.hour * 60 + now.minute;
-  if (minutes >= 8 * 60 + 10 && minutes < 9 * 60 + 10) return 1;
-  if (minutes >= 9 * 60 + 10 && minutes < 10 * 60 + 10) return 2;
-  if (minutes >= 10 * 60 + 10 && minutes < 11 * 60 + 10) return 3;
-  if (minutes >= 11 * 60 + 10 && minutes < 12 * 60 + 10) return 4;
-  if (minutes >= 13 * 60 && minutes < 14 * 60) return 5;
-  if (minutes >= 14 * 60 && minutes < 15 * 60) return 6;
-  if (minutes >= 15 * 60 + 10 && minutes < 16 * 60 + 10) return 7;
-  if (minutes >= 16 * 60 + 10 && minutes < 17 * 60 + 10) return 8;
-  return 0;
-}

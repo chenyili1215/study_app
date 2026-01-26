@@ -13,23 +13,6 @@ import 'package:image/image.dart' as img;
 import 'timetable_importer.dart';
 import 'app_localizations.dart';
 
-// 根據時間取得第幾節
-int getCurrentPeriod() {
-  final now = TimeOfDay.now();
-  final minutes = now.hour * 60 + now.minute;
-  if (minutes >= 8 * 60 + 10 && minutes < 9 * 60 + 10) return 1; // 8:10~9:10
-  if (minutes >= 9 * 60 + 10 && minutes < 10 * 60 + 10) return 2; // 9:10~10:10
-  if (minutes >= 10 * 60 + 10 && minutes < 11 * 60 + 10)
-    return 3; // 10:10~11:10
-  if (minutes >= 11 * 60 + 10 && minutes < 12 * 60 + 10)
-    return 4; // 11:10~12:10
-  if (minutes >= 13 * 60 && minutes < 14 * 60) return 5; // 13:00~14:00
-  if (minutes >= 14 * 60 && minutes < 15 * 60) return 6; // 14:00~15:00
-  if (minutes >= 15 * 60 + 10 && minutes < 16 * 60 + 10)
-    return 7; // 15:10~16:10
-  return 0; // 非上課時間
-}
-
 class PhotoNote {
   final String imagePath;
   final int period;
@@ -88,9 +71,17 @@ class _LabelEngineState extends State<LabelEngine> {
   Future<void> _loadPhotos() async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('photos') ?? [];
+    final loaded = <PhotoNote>[];
+    for (final e in list) {
+      try {
+        loaded.add(PhotoNote.fromJson(jsonDecode(e)));
+      } catch (_) {
+        // 跳過損壞的資料
+      }
+    }
     setState(() {
       _photos.clear();
-      _photos.addAll(list.map((e) => PhotoNote.fromJson(jsonDecode(e))));
+      _photos.addAll(loaded);
     });
   }
 
@@ -229,7 +220,7 @@ class _LabelEngineState extends State<LabelEngine> {
       if (weekday >= 1 && weekday <= 5 && period > 0) {
         subject = TimetableData().table[weekday - 1][period - 1];
       }
-      if (subject.isEmpty) subject = '下課/未排課';
+      if (subject.isEmpty) subject = AppLocalizations.of(context).t('no_class_or_unscheduled');
       setState(() {
         _photos.add(
           PhotoNote(
@@ -314,10 +305,11 @@ class _LabelEngineState extends State<LabelEngine> {
     );
   }
 
-  // 依科目分類
+  // 依科目分類（排除已刪除）
   Map<String, List<PhotoNote>> get groupedBySubject {
     Map<String, List<PhotoNote>> map = {};
     for (var note in _photos) {
+      if (note.deletedAt != null) continue; // 排除已刪除的照片
       final key = note.subject;
       map.putIfAbsent(key, () => []).add(note);
     }
@@ -487,7 +479,9 @@ class _LabelEngineState extends State<LabelEngine> {
             body: filteredPhotos.isEmpty
                 ? Center(
                     child: Text(
-                      selectedDate == null ? '沒有照片' : '這天沒有照片',
+                      selectedDate == null
+                          ? AppLocalizations.of(context).t('no_photos')
+                          : AppLocalizations.of(context).t('no_photos_on_day'),
                       style: TextStyle(
                         fontSize: 18,
                         color: Theme.of(context).colorScheme.outline,
@@ -655,82 +649,111 @@ class _LabelEngineState extends State<LabelEngine> {
   void _openTrash() {
     // 自動清理超過30天的照片
     final now = DateTime.now();
-    final trashPhotos = _photos.where((p) => p.deletedAt != null).toList();
-    trashPhotos.removeWhere((p) {
-      final expired = now.difference(p.deletedAt!).inDays >= 30;
-      if (expired) File(p.imagePath).delete();
-      return expired;
-    });
-    setState(() {
-      _photos.removeWhere(
-        (p) => p.deletedAt != null && now.difference(p.deletedAt!).inDays >= 30,
-      );
-    });
+    final expiredPaths = <String>[];
+    for (final p in _photos) {
+      if (p.deletedAt != null && now.difference(p.deletedAt!).inDays >= 30) {
+        expiredPaths.add(p.imagePath);
+      }
+    }
+    for (final path in expiredPaths) {
+      try {
+        File(path).delete();
+      } catch (_) {}
+    }
+    _photos.removeWhere(
+      (p) => p.deletedAt != null && now.difference(p.deletedAt!).inDays >= 30,
+    );
+    _savePhotos();
+
+    // 使用 StatefulBuilder 讓垃圾桶頁面可以即時更新
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(AppLocalizations.of(context).t('trash'))),
-          body: trashPhotos.isEmpty
-              ? Center(
-                  child: Text(AppLocalizations.of(context).t('trash_empty')),
-                )
-              : ListView.builder(
-                  itemCount: trashPhotos.length,
-                  itemBuilder: (context, index) {
-                    final note = trashPhotos[index];
-                    return ListTile(
-                      leading: Image.file(
-                        File(note.imagePath),
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
+        builder: (_) => StatefulBuilder(
+          builder: (context, setTrashState) {
+            final trashPhotos =
+                _photos.where((p) => p.deletedAt != null).toList();
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(AppLocalizations.of(context).t('trash')),
+              ),
+              body: trashPhotos.isEmpty
+                  ? Center(
+                      child: Text(
+                        AppLocalizations.of(context).t('trash_empty'),
                       ),
-                      title: Text(note.subject),
-                      subtitle: Text(
-                        '${AppLocalizations.of(context).t('deleted_on')}${note.deletedAt!.toLocal().toString().split(' ')[0]}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.restore),
-                            tooltip: AppLocalizations.of(context).t('restore'),
-                            onPressed: () async {
-                              setState(() {
-                                final idx = _photos.indexOf(note);
-                                if (idx != -1) {
-                                  _photos[idx] = PhotoNote(
-                                    imagePath: note.imagePath,
-                                    period: note.period,
-                                    subject: note.subject,
-                                    dateTime: note.dateTime,
-                                    deletedAt: null,
+                    )
+                  : ListView.builder(
+                      itemCount: trashPhotos.length,
+                      itemBuilder: (context, index) {
+                        final note = trashPhotos[index];
+                        return ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(note.imagePath),
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          title: Text(note.subject),
+                          subtitle: Text(
+                            '${AppLocalizations.of(context).t('deleted_on')}${note.deletedAt!.toLocal().toString().split(' ')[0]}',
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.restore),
+                                tooltip: AppLocalizations.of(context).t(
+                                  'restore',
+                                ),
+                                onPressed: () async {
+                                  final idx = _photos.indexWhere(
+                                    (p) =>
+                                        p.imagePath == note.imagePath &&
+                                        p.dateTime == note.dateTime,
                                   );
-                                }
-                              });
-                              await _savePhotos();
-                              Navigator.of(context).pop();
-                            },
+                                  if (idx != -1) {
+                                    _photos[idx] = PhotoNote(
+                                      imagePath: note.imagePath,
+                                      period: note.period,
+                                      subject: note.subject,
+                                      dateTime: note.dateTime,
+                                      deletedAt: null,
+                                    );
+                                  }
+                                  await _savePhotos();
+                                  setTrashState(() {});
+                                  setState(() {});
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_forever),
+                                tooltip: AppLocalizations.of(context).t(
+                                  'delete_forever',
+                                ),
+                                onPressed: () async {
+                                  try {
+                                    await File(note.imagePath).delete();
+                                  } catch (_) {}
+                                  _photos.removeWhere(
+                                    (p) =>
+                                        p.imagePath == note.imagePath &&
+                                        p.dateTime == note.dateTime,
+                                  );
+                                  await _savePhotos();
+                                  setTrashState(() {});
+                                  setState(() {});
+                                },
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_forever),
-                            tooltip: AppLocalizations.of(
-                              context,
-                            ).t('delete_forever'),
-                            onPressed: () async {
-                              File(note.imagePath).delete();
-                              setState(() {
-                                _photos.remove(note);
-                              });
-                              await _savePhotos();
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
+            );
+          },
         ),
       ),
     );
@@ -791,9 +814,7 @@ class _LabelEngineState extends State<LabelEngine> {
                       ),
                     ),
                   ...filteredSubjects.map((subject) {
-                    final photos = groupedBySubject[subject]!
-                        .where((p) => p.deletedAt == null)
-                        .toList();
+                    final photos = groupedBySubject[subject]!;
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Material(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'homework.dart';
+import 'app_localizations.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -166,6 +167,7 @@ class NotificationService {
       final prefs = await SharedPreferences.getInstance();
       final notificationIds =
           prefs.getStringList('homework_notification_ids') ?? [];
+      final langCode = prefs.getString('locale') ?? 'zh';
 
       // 通知 ID（基於功課資訊）
       final notificationId =
@@ -177,8 +179,12 @@ class NotificationService {
       if (notifyTime24h.isAfter(DateTime.now())) {
         await _scheduleNotification(
           notificationId,
-          '功課提醒',
-          '${homework.subject}：${homework.title} 將在 24 小時後截止',
+          AppLocalizations.tStatic('notification_homework_reminder', langCode),
+          AppLocalizations.tStaticWithArgs(
+            'notification_homework_24h',
+            langCode,
+            {'subject': homework.subject, 'title': homework.title},
+          ),
           notifyTime24h,
           '${notificationId}_24h',
         );
@@ -189,8 +195,12 @@ class NotificationService {
       if (notifyTime1h.isAfter(DateTime.now())) {
         await _scheduleNotification(
           notificationId + 1,
-          '緊急提醒',
-          '${homework.subject}：${homework.title} 將在 1 小時後截止！',
+          AppLocalizations.tStatic('notification_urgent_reminder', langCode),
+          AppLocalizations.tStaticWithArgs(
+            'notification_homework_1h',
+            langCode,
+            {'subject': homework.subject, 'title': homework.title},
+          ),
           notifyTime1h,
           '${notificationId}_1h',
         );

@@ -94,6 +94,40 @@ class AppLocalizations {
       'weekday_4': '星期四',
       'weekday_5': '星期五',
       'period_format': '第{n}節',
+      // label_engine
+      'no_class_or_unscheduled': '下課/未排課',
+      // settings
+      'theme_light': '亮色',
+      'theme_dark': '暗色',
+      'theme_follow_system': '跟隨系統',
+      'choose_theme_color': '選擇主題顏色',
+      'close': '關閉',
+      'easter_egg_title': '小彩蛋！',
+      'easter_egg_content': '你發現了隱藏彩蛋！\n\n真是個聰明的學習者',
+      'default_timetable_name': '我的課表',
+      // color names
+      'color_blue': '藍色',
+      'color_green': '綠色',
+      'color_purple': '紫色',
+      'color_orange': '橙色',
+      'color_red': '紅色',
+      'color_teal': '藍綠',
+      'color_pink': '粉紅',
+      'color_brown': '咖啡',
+      'color_indigo': '靛藍',
+      'color_cyan': '青色',
+      'color_amber': '琥珀',
+      'color_deep_orange': '深橙',
+      // notifications
+      'notification_homework_reminder': '功課提醒',
+      'notification_homework_24h': '{subject}：{title} 將在 24 小時後截止',
+      'notification_urgent_reminder': '緊急提醒',
+      'notification_homework_1h': '{subject}：{title} 將在 1 小時後截止！',
+      // homework
+      'confirm_delete': '確認刪除',
+      'confirm_delete_homework': '確定要刪除這份功課嗎？',
+      'delete': '刪除',
+      'period_label': '第{n}節',
     },
     'en': {
       'app_title': 'Study App',
@@ -173,6 +207,42 @@ class AppLocalizations {
       'weekday_4': 'Thu',
       'weekday_5': 'Fri',
       'period_format': 'Period {n}',
+      'no_photos_yet': 'No photos yet',
+      'take_photo_failed': 'Failed to take photo',
+      // label_engine
+      'no_class_or_unscheduled': 'Break / No class',
+      // settings
+      'theme_light': 'Light',
+      'theme_dark': 'Dark',
+      'theme_follow_system': 'Follow system',
+      'choose_theme_color': 'Choose theme color',
+      'close': 'Close',
+      'easter_egg_title': 'Easter Egg!',
+      'easter_egg_content': 'You found a hidden easter egg!\n\nYou are a smart learner',
+      'default_timetable_name': 'My Timetable',
+      // color names
+      'color_blue': 'Blue',
+      'color_green': 'Green',
+      'color_purple': 'Purple',
+      'color_orange': 'Orange',
+      'color_red': 'Red',
+      'color_teal': 'Teal',
+      'color_pink': 'Pink',
+      'color_brown': 'Brown',
+      'color_indigo': 'Indigo',
+      'color_cyan': 'Cyan',
+      'color_amber': 'Amber',
+      'color_deep_orange': 'Deep Orange',
+      // notifications
+      'notification_homework_reminder': 'Homework Reminder',
+      'notification_homework_24h': '{subject}: {title} is due in 24 hours',
+      'notification_urgent_reminder': 'Urgent Reminder',
+      'notification_homework_1h': '{subject}: {title} is due in 1 hour!',
+      // homework
+      'confirm_delete': 'Confirm Delete',
+      'confirm_delete_homework': 'Are you sure you want to delete this homework?',
+      'delete': 'Delete',
+      'period_label': 'Period {n}',
     },
     'ja': {
       'app_title': 'Study App',
@@ -253,6 +323,42 @@ class AppLocalizations {
       'weekday_4': '木',
       'weekday_5': '金',
       'period_format': '{n}時限',
+      'no_photos_yet': 'まだ写真がありません',
+      'take_photo_failed': '撮影に失敗しました',
+      // label_engine
+      'no_class_or_unscheduled': '休憩/未登録',
+      // settings
+      'theme_light': 'ライト',
+      'theme_dark': 'ダーク',
+      'theme_follow_system': 'システムに従う',
+      'choose_theme_color': 'テーマカラーを選択',
+      'close': '閉じる',
+      'easter_egg_title': 'イースターエッグ！',
+      'easter_egg_content': '隠しイースターエッグを見つけました！\n\nさすが賢い学習者ですね',
+      'default_timetable_name': '時間割',
+      // color names
+      'color_blue': 'ブルー',
+      'color_green': 'グリーン',
+      'color_purple': 'パープル',
+      'color_orange': 'オレンジ',
+      'color_red': 'レッド',
+      'color_teal': 'ティール',
+      'color_pink': 'ピンク',
+      'color_brown': 'ブラウン',
+      'color_indigo': 'インディゴ',
+      'color_cyan': 'シアン',
+      'color_amber': 'アンバー',
+      'color_deep_orange': 'ディープオレンジ',
+      // notifications
+      'notification_homework_reminder': '宿題リマインダー',
+      'notification_homework_24h': '{subject}：{title} の締切まであと24時間',
+      'notification_urgent_reminder': '緊急リマインダー',
+      'notification_homework_1h': '{subject}：{title} の締切まであと1時間！',
+      // homework
+      'confirm_delete': '削除の確認',
+      'confirm_delete_homework': 'この宿題を削除してもよろしいですか？',
+      'delete': '削除',
+      'period_label': '{n}時限目',
     },
   };
 
@@ -266,6 +372,23 @@ class AppLocalizations {
   String tWithNumber(String key, int n) {
     final raw = t(key);
     return raw.replaceAll('{n}', n.toString());
+  }
+
+  /// 取得不需要 context 的靜態翻譯（供 notification 等無 context 場景使用）
+  static String tStatic(String key, String langCode) {
+    return _localizedValues[langCode]?[key] ??
+        _localizedValues['zh']![key] ??
+        key;
+  }
+
+  static String tStaticWithArgs(
+    String key,
+    String langCode,
+    Map<String, String> args,
+  ) {
+    var raw = tStatic(key, langCode);
+    args.forEach((k, v) => raw = raw.replaceAll('{$k}', v));
+    return raw;
   }
 }
 

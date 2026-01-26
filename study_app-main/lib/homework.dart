@@ -63,18 +63,18 @@ class _HomeworkPageState extends State<HomeworkPage> {
     await prefs.setStringList('homeworks', list);
   }
 
-  void _showAddHomeworkDialog() {
+  void _showAddHomeworkDialog() async {
     final colorScheme = Theme.of(context).colorScheme;
     final titleController = TextEditingController();
     DateTime? deadline;
     String? selectedSubject;
     String errorMessage = '';
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
+          builder: (context, setDialogState) => AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
             ),
@@ -149,7 +149,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
                       if (picked != null) {
-                        setState(() => deadline = picked);
+                        setDialogState(() => deadline = picked);
                       }
                     },
                     child: Container(
@@ -175,19 +175,19 @@ class _HomeworkPageState extends State<HomeworkPage> {
                 label: Text(AppLocalizations.of(context).t('save')),
                 onPressed: () async {
                   if (selectedSubject == null) {
-                    setState(() {
+                    setDialogState(() {
                       errorMessage = AppLocalizations.of(
                         context,
                       ).t('choose_subject');
                     });
                   } else if (titleController.text.isEmpty) {
-                    setState(() {
+                    setDialogState(() {
                       errorMessage = AppLocalizations.of(
                         context,
                       ).t('homework_title');
                     });
                   } else if (deadline == null) {
-                    setState(() {
+                    setDialogState(() {
                       errorMessage = AppLocalizations.of(
                         context,
                       ).t('select_deadline');
@@ -205,7 +205,6 @@ class _HomeworkPageState extends State<HomeworkPage> {
                       newHomework,
                     );
                     if (mounted) {
-                      setState(() {});
                       Navigator.pop(context);
                     }
                   }
@@ -216,6 +215,8 @@ class _HomeworkPageState extends State<HomeworkPage> {
         );
       },
     );
+    // 對話框關閉後，重新載入功課列表以更新外部 UI
+    _loadHomeworks();
   }
 
   @override
@@ -255,13 +256,44 @@ class _HomeworkPageState extends State<HomeworkPage> {
                 trailing: IconButton(
                   icon: const Icon(Icons.delete, color: Colors.redAccent),
                   onPressed: () async {
-                    final deletedHomework = _homeworks[index];
-                    setState(() => _homeworks.removeAt(index));
-                    await _saveHomeworks();
-                    // 取消該功課的通知
-                    await NotificationService().cancelHomeworkNotification(
-                      deletedHomework,
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        title: Text(
+                          AppLocalizations.of(context).t('confirm_delete'),
+                        ),
+                        content: Text(
+                          AppLocalizations.of(context).t('confirm_delete_homework'),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text(
+                              AppLocalizations.of(context).t('cancel'),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: Text(
+                              AppLocalizations.of(context).t('delete'),
+                              style: const TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
+                    if (confirmed == true) {
+                      final deletedHomework = _homeworks[index];
+                      setState(() => _homeworks.removeAt(index));
+                      await _saveHomeworks();
+                      // 取消該功課的通知
+                      await NotificationService().cancelHomeworkNotification(
+                        deletedHomework,
+                      );
+                    }
                   },
                 ),
               ),

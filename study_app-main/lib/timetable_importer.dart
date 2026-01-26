@@ -3,6 +3,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app_localizations.dart';
 import 'dart:convert';
 
+// 統一的當前節次判斷（唯一來源）
+int getCurrentPeriod() {
+  final now = TimeOfDay.now();
+  final minutes = now.hour * 60 + now.minute;
+  if (minutes >= 8 * 60 + 10 && minutes < 9 * 60 + 10) return 1;
+  if (minutes >= 9 * 60 + 10 && minutes < 10 * 60 + 10) return 2;
+  if (minutes >= 10 * 60 + 10 && minutes < 11 * 60 + 10) return 3;
+  if (minutes >= 11 * 60 + 10 && minutes < 12 * 60 + 10) return 4;
+  if (minutes >= 13 * 60 && minutes < 14 * 60) return 5;
+  if (minutes >= 14 * 60 && minutes < 15 * 60) return 6;
+  if (minutes >= 15 * 60 + 10 && minutes < 16 * 60 + 10) return 7;
+  if (minutes >= 16 * 60 + 10 && minutes < 17 * 60 + 10) return 8;
+  return 0;
+}
+
 // 全域課表單例
 class TimetableData {
   static final TimetableData _instance = TimetableData._internal();
@@ -22,7 +37,7 @@ class TimetableData {
     5,
     (_) => List.generate(7, (_) => ''),
   );
-  String name = '我的課表';
+  String name = 'My Timetable';
 
   Future<void> save() async {
     final prefs = await SharedPreferences.getInstance();
@@ -56,14 +71,38 @@ class TimetableData {
         decoded.map((row) => List<String>.from(row)),
       );
     }
-    name = prefs.getString('timetable_name') ?? '我的課表';
+    name = prefs.getString('timetable_name') ?? 'My Timetable';
     periods = prefs.getInt('timetable_periods') ?? 7; // 讀取節數
-    // 若資料長度不符，重建
-    if (table.length != 5 || table.any((row) => row.length != periods)) {
-      table = List.generate(5, (_) => List.generate(periods, (_) => ''));
-      locations = List.generate(5, (_) => List.generate(periods, (_) => ''));
-      teachers = List.generate(5, (_) => List.generate(periods, (_) => ''));
+    // 若資料長度不符，調整大小但保留現有資料
+    _resizeToFit(periods);
+  }
+
+  /// 調整課表大小，保留既有資料
+  void _resizeToFit(int targetPeriods) {
+    List<List<String>> resize(List<List<String>> source) {
+      // 確保有 5 天
+      while (source.length < 5) {
+        source.add(List.generate(targetPeriods, (_) => ''));
+      }
+      for (int d = 0; d < 5; d++) {
+        final old = source[d];
+        if (old.length < targetPeriods) {
+          // 擴展：保留原有資料，新增空白
+          source[d] = [
+            ...old,
+            ...List.generate(targetPeriods - old.length, (_) => ''),
+          ];
+        } else if (old.length > targetPeriods) {
+          // 縮減：保留前面的資料
+          source[d] = old.sublist(0, targetPeriods);
+        }
+      }
+      return source;
     }
+
+    table = resize(table);
+    locations = resize(locations);
+    teachers = resize(teachers);
   }
 }
 
@@ -76,7 +115,7 @@ class TimetableImporter extends StatefulWidget {
 
 class _TimetableImporterState extends State<TimetableImporter> {
   final TimetableData timetable = TimetableData();
-  bool? _isEditing = false;
+  bool _isEditing = false;
 
   @override
   void initState() {
@@ -123,18 +162,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
               if (val != null && val > 0 && val <= 12) {
                 setState(() {
                   timetable.periods = val;
-                  timetable.table = List.generate(
-                    5,
-                    (_) => List.generate(val, (_) => ''),
-                  );
-                  timetable.locations = List.generate(
-                    5,
-                    (_) => List.generate(val, (_) => ''),
-                  );
-                  timetable.teachers = List.generate(
-                    5,
-                    (_) => List.generate(val, (_) => ''),
-                  );
+                  timetable._resizeToFit(val);
                 });
                 timetable.save();
                 Navigator.of(context).pop();
@@ -150,7 +178,7 @@ class _TimetableImporterState extends State<TimetableImporter> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final today = DateTime.now().weekday;
-    bool isEditing = _isEditing ?? false;
+    bool isEditing = _isEditing;
 
     return Scaffold(
       appBar: AppBar(
@@ -726,39 +754,22 @@ class _TimetableImporterState extends State<TimetableImporter> {
                       ),
                       child: Builder(
                         builder: (context) {
-                          final now = TimeOfDay.now();
-                          final minutes = now.hour * 60 + now.minute;
-                          final periods = [
-                            8 * 60 + 10,
-                            9 * 60 + 10,
-                            10 * 60 + 10,
-                            11 * 60 + 10,
-                            13 * 60,
-                            14 * 60,
-                            15 * 60 + 10,
-                            16 * 60 + 10,
-                          ];
-                          int currentPeriod =
-                              periods.lastIndexWhere(
-                                (start) => minutes >= start,
-                              ) +
-                              1;
-
-                          if (currentPeriod > 7) currentPeriod = 0;
-
+                          final currentPeriod = getCurrentPeriod();
                           int todayIdx = today < 1 || today > 5
                               ? -1
                               : today - 1;
 
                           String getSubject(int period) {
-                            if (todayIdx < 0 || todayIdx >= 5)
+                            if (todayIdx < 0 || todayIdx >= 5) {
                               return AppLocalizations.of(
                                 context,
                               ).t('not_class_day');
-                            if (period < 1 || period > timetable.periods)
+                            }
+                            if (period < 1 || period > timetable.periods) {
                               return AppLocalizations.of(
                                 context,
                               ).t('not_class_time');
+                            }
                             final subject =
                                 timetable.table[todayIdx][period - 1];
                             return subject.isEmpty
@@ -808,37 +819,23 @@ class _TimetableImporterState extends State<TimetableImporter> {
                       ),
                       child: Builder(
                         builder: (context) {
-                          final now = TimeOfDay.now();
-                          final minutes = now.hour * 60 + now.minute;
-                          final periods = [
-                            8 * 60 + 10,
-                            9 * 60 + 10,
-                            10 * 60 + 10,
-                            11 * 60 + 10,
-                            13 * 60,
-                            14 * 60,
-                            15 * 60 + 10,
-                            16 * 60 + 10,
-                          ];
-                          int currentPeriod =
-                              periods.lastIndexWhere(
-                                (start) => minutes >= start,
-                              ) +
-                              1;
-                          int nextPeriod = currentPeriod < 7
-                              ? currentPeriod + 1
-                              : 0;
+                          final currentPeriod = getCurrentPeriod();
+                          final nextPeriod = currentPeriod + 1;
                           int todayIdx = today < 1 || today > 5
                               ? -1
                               : today - 1;
 
                           String getSubject(int period) {
-                            if (todayIdx < 0 || todayIdx >= 5)
+                            if (todayIdx < 0 || todayIdx >= 5) {
                               return AppLocalizations.of(
                                 context,
                               ).t('not_class_day');
-                            if (period < 1 || period > 7)
-                              return AppLocalizations.of(context).t('none');
+                            }
+                            if (period < 1 || period > timetable.periods) {
+                              return AppLocalizations.of(
+                                context,
+                              ).t('today_no_more_classes');
+                            }
                             final subject =
                                 timetable.table[todayIdx][period - 1];
                             return subject.isEmpty
